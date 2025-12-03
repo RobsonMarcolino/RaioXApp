@@ -1,10 +1,10 @@
 export const COLORS = {
-    primary: '#00a8ff',
-    primaryLight: '#4cd3ff',
-    primaryDark: '#0077b6',
-    secondary: '#8e9aaf',
-    accent: '#ff9e00',
-    accentLight: '#ffb74d',
+    primary: '#FCD535', // Bees Yellow
+    primaryLight: '#ffe066',
+    primaryDark: '#e6c200',
+    secondary: '#1A1A1A', // Bees Black
+    accent: '#1A1A1A', // Using Black as accent for high contrast
+    accentLight: '#333333',
     success: '#00d1b2',
     warning: '#ff9e00',
     error: '#ff3860',
@@ -29,10 +29,11 @@ export const COLORS = {
     bgGlass: 'rgba(255, 255, 255, 0.1)',
 
     // Text
-    textPrimary: '#1e293b',
+    textPrimary: '#1A1A1A', // Black for primary text
     textSecondary: '#475569',
     textTertiary: '#64748b',
     textInverse: '#ffffff',
+    textOnPrimary: '#1A1A1A', // Black text on Yellow background
 
     // Borders
     borderLight: 'rgba(226, 232, 240, 0.8)',
@@ -55,6 +56,7 @@ export const RADIUS = {
     lg: 12,
     xl: 16,
     xxl: 24,
+    full: 9999,
 };
 
 export const SHADOWS = {

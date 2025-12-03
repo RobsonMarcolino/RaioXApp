@@ -24,14 +24,15 @@ const GuideScreen = () => {
             resizeMode="cover"
         >
             <View style={styles.overlay}>
-                <BlurView intensity={30} tint="dark" style={styles.glassCard}>
+                <BlurView intensity={40} tint="dark" style={styles.glassCard}>
                     <View style={styles.header}>
                         <Text style={styles.title}>Guia de Bolso</Text>
                         <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
                     </View>
 
                     <View style={styles.iconContainer}>
-                        <BookOpen size={48} color={COLORS.primary} />
+                        <BookOpen size={56} color={COLORS.primary} />
+                        <View style={styles.iconGlow} />
                     </View>
 
                     <Text style={styles.cardTitle}>Guia Completo</Text>
@@ -39,9 +40,13 @@ const GuideScreen = () => {
                         Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
                     </Text>
 
-                    <TouchableOpacity style={styles.button} onPress={handleOpenGuide}>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleOpenGuide}
+                        activeOpacity={0.8}
+                    >
                         <Text style={styles.buttonText}>Acessar Guia</Text>
-                        <ExternalLink size={20} color="#FFF" style={{ marginLeft: 8 }} />
+                        <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
                     </TouchableOpacity>
                 </BlurView>
             </View>
@@ -57,7 +62,7 @@ const styles = StyleSheet.create({
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.1)', // Reduced opacity to show background
+        backgroundColor: 'rgba(0,0,0,0.2)', // Slightly darker overlay
         justifyContent: 'center',
         alignItems: 'center',
         padding: SPACING.lg,
@@ -65,12 +70,13 @@ const styles = StyleSheet.create({
     glassCard: {
         width: '100%',
         padding: SPACING.xl,
-        borderRadius: RADIUS.xl,
+        borderRadius: RADIUS.xxl,
         alignItems: 'center',
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-        backgroundColor: 'rgba(20, 20, 20, 0.3)', // More transparent
+        borderColor: 'rgba(255,255,255,0.15)',
+        backgroundColor: 'rgba(20, 20, 20, 0.5)', // Darker glass
+        ...SHADOWS.lg,
     },
     header: {
         alignItems: 'center',
@@ -82,25 +88,33 @@ const styles = StyleSheet.create({
         color: '#FFF',
         marginBottom: SPACING.xs,
         textAlign: 'center',
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        letterSpacing: 1,
     },
     subtitle: {
         fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(255,255,255,0.7)',
         textAlign: 'center',
     },
     iconContainer: {
-        width: 90,
-        height: 90,
-        borderRadius: 45,
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255,255,255,0.05)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: SPACING.lg,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        position: 'relative',
+    },
+    iconGlow: {
+        position: 'absolute',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: COLORS.primary,
+        opacity: 0.1,
+        zIndex: -1,
     },
     cardTitle: {
         fontSize: 24,
@@ -111,26 +125,30 @@ const styles = StyleSheet.create({
     },
     cardDescription: {
         fontSize: 16,
-        color: 'rgba(255,255,255,0.9)',
+        color: 'rgba(255,255,255,0.8)',
         textAlign: 'center',
-        marginBottom: SPACING.xl,
+        marginBottom: SPACING.xxl,
         lineHeight: 24,
     },
     button: {
         flexDirection: 'row',
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.primary, // Bees Yellow
         paddingHorizontal: SPACING.xl,
-        paddingVertical: SPACING.md,
-        borderRadius: RADIUS.lg,
+        paddingVertical: SPACING.lg,
+        borderRadius: RADIUS.xl,
         alignItems: 'center',
         ...SHADOWS.md,
         width: '100%',
         justifyContent: 'center',
+        shadowColor: COLORS.primary,
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
     },
     buttonText: {
-        color: '#FFF',
+        color: '#1A1A1A', // Black text
         fontSize: 18,
         fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
 });
 

@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MessageSquare, Database, BookOpen } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MessageSquare, Store, BookOpen } from 'lucide-react-native';
 
 import LoadingScreen from '../screens/LoadingScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -22,20 +23,31 @@ const TabNavigator = () => {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    backgroundColor: COLORS.bgCard,
-                    borderTopWidth: 1,
-                    borderTopColor: COLORS.borderLight,
-                    elevation: 5,
+                    borderTopWidth: 0,
+                    elevation: 10,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: -2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 5,
-                    height: 60 + (Platform.OS === 'ios' ? 20 : 0), // Adjust for safe area
+                    shadowOffset: { width: 0, height: -4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    height: 60 + (Platform.OS === 'ios' ? 20 : 0),
                     paddingBottom: Platform.OS === 'ios' ? 20 : 8,
                     paddingTop: 8,
+                    backgroundColor: 'transparent', // Important for gradient to show
+                    position: 'absolute', // Needed for transparency to work in some cases, or just to ensure background shows
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
                 },
-                tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.textSecondary,
+                tabBarBackground: () => (
+                    <LinearGradient
+                        colors={['#2A2A2A', '#000000']} // Gradient from Dark Gray to Black
+                        style={{ flex: 1 }}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                    />
+                ),
+                tabBarActiveTintColor: COLORS.primary, // Bees Yellow
+                tabBarInactiveTintColor: '#666666', // Dark Gray
             }}
         >
             <Tab.Screen
@@ -47,11 +59,11 @@ const TabNavigator = () => {
                 }}
             />
             <Tab.Screen
-                name="Dados"
+                name="Lojas"
                 component={DataScreen}
                 options={{
-                    tabBarLabel: 'Dados',
-                    tabBarIcon: ({ color, size }) => <Database color={color} size={size} />
+                    tabBarLabel: 'Lojas',
+                    tabBarIcon: ({ color, size }) => <Store color={color} size={size} />
                 }}
             />
             <Tab.Screen

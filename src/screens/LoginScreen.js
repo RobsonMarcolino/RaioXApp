@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert, KeyboardAvoidingView, Platform, Animated } from 'react-native';
-import { Video } from 'expo-av';
-import { BlurView } from 'expo-blur';
-import { COLORS, SPACING, RADIUS } from '../constants/theme';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert, KeyboardAvoidingView, Platform, Animated, Image } from 'react-native';
+import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { User, Lock, ArrowRight } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,18 +12,34 @@ const AUTHORIZED_USERS = {
     gestor: "offtrade@2024",
 };
 
+// Bees Brand Colors
+const BEES_YELLOW = '#FCD535';
+const BEES_BLACK = '#1A1A1A';
+const BEES_WHITE = '#FFFFFF';
+
 const LoginScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Animations
     const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(100)).current;
 
     useEffect(() => {
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-        }).start();
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+                toValue: 0,
+                friction: 8,
+                tension: 40,
+                useNativeDriver: true,
+            }),
+        ]).start();
     }, []);
 
     const handleLogin = () => {
@@ -49,81 +63,79 @@ const LoginScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Video
-                source={{ uri: 'https://cdn.pixabay.com/video/2024/01/24/198018-906226540_large.mp4' }}
-                style={StyleSheet.absoluteFill}
-                resizeMode="cover"
-                isLooping
-                shouldPlay
-                isMuted
-            />
+            {/* Top Section - Logo Image */}
+            <View style={styles.topSection}>
+                <Image
+                    source={require('../../assets/LOGO1.jpg')}
+                    style={styles.headerImage}
+                    resizeMode="cover"
+                />
+            </View>
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.keyboardView}
+            {/* Bottom Section - White Sheet */}
+            <Animated.View
+                style={[
+                    styles.bottomSection,
+                    {
+                        transform: [{ translateY: slideAnim }]
+                    }
+                ]}
             >
-                <Animated.View style={{ width: '100%', alignItems: 'center', opacity: fadeAnim }}>
-                    <BlurView intensity={80} tint="dark" style={styles.loginCard}>
-                        <View style={styles.header}>
-                            <View style={styles.logo}>
-                                <Video
-                                    source={{ uri: 'https://cdn.pixabay.com/video/2023/01/09/145864-787701151_tiny.mp4' }}
-                                    style={StyleSheet.absoluteFill}
-                                    resizeMode="cover"
-                                    isLooping
-                                    shouldPlay
-                                    isMuted
-                                />
-                            </View>
-                            <Text style={styles.title}>Raio-X Score 5</Text>
-                            <Text style={styles.subtitle}>Sistema de Inteligência de Dados</Text>
-                        </View>
+                <View style={styles.formContainer}>
+                    <Text style={styles.welcomeTitle}>Bem-vindo!</Text>
+                    <Text style={styles.welcomeSubtitle}>Insira seus dados para continuar.</Text>
 
-                        <View style={styles.form}>
-                            <Text style={styles.label}>Usuário</Text>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Usuário</Text>
+                        <View style={styles.inputWrapper}>
+                            <User size={20} color={COLORS.gray500} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
                                 placeholder="Digite seu usuário"
-                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                placeholderTextColor={COLORS.gray400}
                                 value={username}
                                 onChangeText={setUsername}
                                 autoCapitalize="none"
                             />
+                        </View>
+                    </View>
 
-                            <Text style={styles.label}>Senha</Text>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Senha</Text>
+                        <View style={styles.inputWrapper}>
+                            <Lock size={20} color={COLORS.gray500} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
                                 placeholder="Digite sua senha"
-                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                placeholderTextColor={COLORS.gray400}
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry
                             />
-
-                            <TouchableOpacity
-                                style={styles.button}
-                                onPress={handleLogin}
-                                disabled={isLoading}
-                            >
-                                <LinearGradient
-                                    colors={[COLORS.primaryLight, COLORS.primary, COLORS.primaryDark]}
-                                    style={styles.buttonGradient}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                >
-                                    <Text style={styles.buttonText}>
-                                        {isLoading ? 'Verificando...' : 'Acessar Sistema'}
-                                    </Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
                         </View>
+                    </View>
 
-                        <Text style={styles.footer}>
-                            Desenvolvido pela <Text style={{ color: COLORS.primaryLight, fontWeight: 'bold' }}>DIRETA MG</Text>
+                    <TouchableOpacity style={styles.forgotPassword}>
+                        <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handleLogin}
+                        disabled={isLoading}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.buttonText}>
+                            {isLoading ? 'ENTRANDO...' : 'ENTRAR'}
                         </Text>
-                    </BlurView>
-                </Animated.View>
-            </KeyboardAvoidingView>
+                        {!isLoading && <ArrowRight size={20} color={BEES_YELLOW} style={{ marginLeft: 8 }} />}
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>Raio-X Score 5 • Versão 1.0</Text>
+                </View>
+            </Animated.View>
         </View>
     );
 };
@@ -131,100 +143,101 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.gray900,
+        backgroundColor: BEES_YELLOW,
     },
-    keyboardView: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING.lg,
+    topSection: {
+        height: '35%',
+        backgroundColor: BEES_YELLOW,
     },
-    loginCard: {
+    headerImage: {
         width: '100%',
-        maxWidth: 400,
-        padding: SPACING.xl,
-        borderRadius: RADIUS.xxl,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
+        height: '100%',
     },
-    header: {
-        alignItems: 'center',
-        marginBottom: SPACING.xl,
+    bottomSection: {
+        flex: 1,
+        backgroundColor: BEES_WHITE,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: SPACING.xl,
+        paddingTop: SPACING.xxl,
+        ...SHADOWS.lg,
     },
-    logo: {
-        width: 100,
-        height: 100,
-        backgroundColor: '#000',
-        borderRadius: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: SPACING.md,
-        borderWidth: 2,
-        borderColor: COLORS.primary,
-        overflow: 'hidden',
-        elevation: 10,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
+    formContainer: {
+        width: '100%',
     },
-    title: {
+    welcomeTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: COLORS.textInverse,
-        textAlign: 'center',
+        color: BEES_BLACK,
         marginBottom: SPACING.xs,
     },
-    subtitle: {
-        fontSize: 14,
-        color: COLORS.gray300,
-        textAlign: 'center',
+    welcomeSubtitle: {
+        fontSize: 16,
+        color: COLORS.gray500,
+        marginBottom: SPACING.xl,
     },
-    form: {
-        gap: SPACING.md,
+    inputContainer: {
+        marginBottom: SPACING.md,
     },
     label: {
-        color: COLORS.textInverse,
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
+        color: BEES_BLACK,
         marginBottom: SPACING.xs,
     },
-    input: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.gray50,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md,
+        height: 56,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.2)',
-        borderRadius: RADIUS.lg,
-        padding: SPACING.md,
-        color: COLORS.textInverse,
+        borderColor: COLORS.gray200,
+    },
+    inputIcon: {
+        marginRight: SPACING.sm,
+    },
+    input: {
+        flex: 1,
+        color: BEES_BLACK,
         fontSize: 16,
+        height: '100%',
+        fontWeight: '500',
+    },
+    forgotPassword: {
+        alignSelf: 'flex-end',
+        marginBottom: SPACING.xl,
+    },
+    forgotPasswordText: {
+        color: COLORS.gray600,
+        fontSize: 14,
+        fontWeight: '600',
     },
     button: {
-        marginTop: SPACING.md,
-        borderRadius: RADIUS.lg,
-        overflow: 'hidden',
-        elevation: 5,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-    },
-    buttonGradient: {
-        padding: SPACING.md,
+        backgroundColor: BEES_BLACK,
+        borderRadius: RADIUS.xl,
+        height: 56,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        ...SHADOWS.md,
     },
     buttonText: {
-        color: COLORS.textInverse,
+        color: BEES_YELLOW,
         fontSize: 16,
         fontWeight: 'bold',
-        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     footer: {
-        marginTop: SPACING.xl,
-        textAlign: 'center',
+        marginTop: 'auto',
+        marginBottom: SPACING.lg,
+        alignItems: 'center',
+    },
+    footerText: {
         color: COLORS.gray400,
         fontSize: 12,
+        fontWeight: '500',
     },
 });
 

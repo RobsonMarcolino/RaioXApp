@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { Video } from 'expo-av';
 import { Send, User, Bot } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData, callGoogleAI, generateAIContext } from '../services/api';
@@ -83,8 +81,7 @@ const ChatScreen = ({ navigation }) => {
             }
 
             const context = generateAIContext(userMessage.text, csvData, estabelecimento);
-            const aiResponse = await callGoogleAI(context); // Note: callGoogleAI in api.js expects just the prompt if we modified it, or we need to adjust api.js to accept the full prompt constructed here. 
-            // Wait, api.js callGoogleAI takes 'prompt'. generateAIContext returns the full prompt string. So this is correct.
+            const aiResponse = await callGoogleAI(context);
 
             const botMessage = {
                 id: Date.now().toString() + '_bot',
@@ -120,7 +117,7 @@ const ChatScreen = ({ navigation }) => {
                     if (part.startsWith('**') && part.endsWith('**')) {
                         // Bold text
                         return (
-                            <Text key={index} style={[styles.botText, { fontWeight: 'bold', color: COLORS.primary }]}>
+                            <Text key={index} style={[styles.botText, { fontWeight: 'bold', color: COLORS.primaryDark }]}>
                                 {part.replace(/\*\*/g, '')}
                             </Text>
                         );
@@ -132,7 +129,7 @@ const ChatScreen = ({ navigation }) => {
                                 // List item
                                 return (
                                     <View key={`${index}-${lineIndex}`} style={{ flexDirection: 'row', alignItems: 'flex-start', marginVertical: 2 }}>
-                                        <Text style={[styles.botText, { marginRight: 6, fontWeight: 'bold' }]}>•</Text>
+                                        <Text style={[styles.botText, { marginRight: 6, fontWeight: 'bold', color: COLORS.primaryDark }]}>•</Text>
                                         <Text style={[styles.botText, { flex: 1 }]}>{line.trim().substring(1).trim()}</Text>
                                     </View>
                                 );
@@ -170,7 +167,7 @@ const ChatScreen = ({ navigation }) => {
                 </View>
                 {isUser && (
                     <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
-                        <User size={20} color="#FFF" />
+                        <User size={20} color="#1A1A1A" />
                     </View>
                 )}
             </View>
@@ -179,51 +176,49 @@ const ChatScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Video
-                source={{ uri: 'https://cdn.pixabay.com/video/2024/01/24/198018-906226540_large.mp4' }}
-                style={StyleSheet.absoluteFill}
-                resizeMode="cover"
-                isLooping
-                shouldPlay
-                isMuted
-            />
-            <BlurView intensity={90} tint="light" style={styles.blurContainer}>
-                <View style={styles.header}>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={styles.headerTitle}>Raio-X Score 5</Text>
-                        <Text style={styles.headerSubtitle}>
-                            {csvData.length > 0 ? `${csvData.length} estabelecimentos` : 'Carregando dados...'}
-                        </Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.logoutButton}
-                        onPress={() => {
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Login' }],
-                            });
-                        }}
-                    >
-                        <Text style={styles.logoutText}>Sair</Text>
-                    </TouchableOpacity>
+            {/* Header */}
+            <LinearGradient
+                colors={[COLORS.primary, '#E6C229']} // Gradient from Bees Yellow to slightly darker
+                style={styles.header}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            >
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={styles.headerTitle}>Raio-X Score 5</Text>
+                    <Text style={styles.headerSubtitle}>
+                        {csvData.length > 0 ? `${csvData.length} estabelecimentos` : 'Carregando dados...'}
+                    </Text>
                 </View>
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={() => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Login' }],
+                        });
+                    }}
+                >
+                    <Text style={styles.logoutText}>Sair</Text>
+                </TouchableOpacity>
+            </LinearGradient>
 
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    renderItem={renderMessage}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.listContent}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                />
+            <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.listContent}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            />
 
-                {isTyping && (
-                    <View style={styles.typingContainer}>
-                        <Text style={styles.typingText}>IA está digitando...</Text>
-                    </View>
-                )}
+            {isTyping && (
+                <View style={styles.typingContainer}>
+                    <Text style={styles.typingText}>IA está digitando...</Text>
+                </View>
+            )}
 
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+                <View style={styles.inputWrapper}>
                     <View style={styles.inputContainer}>
                         <TextInput
                             style={styles.input}
@@ -240,14 +235,14 @@ const ChatScreen = ({ navigation }) => {
                             disabled={!inputText.trim() || isLoading}
                         >
                             {isLoading ? (
-                                <ActivityIndicator color="#FFF" size="small" />
+                                <ActivityIndicator color="#1A1A1A" size="small" />
                             ) : (
-                                <Send size={20} color="#FFF" />
+                                <Send size={20} color={!inputText.trim() ? "#FFF" : "#1A1A1A"} />
                             )}
                         </TouchableOpacity>
                     </View>
-                </KeyboardAvoidingView>
-            </BlurView>
+                </View>
+            </KeyboardAvoidingView>
         </View>
     );
 };
@@ -255,40 +250,39 @@ const ChatScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.bg,
-    },
-    blurContainer: {
-        flex: 1,
+        backgroundColor: '#F5F5F5', // Clean Off-white background
     },
     header: {
         flexDirection: 'row',
         padding: SPACING.md,
         paddingTop: SPACING.xl + 20, // Status bar padding
-        backgroundColor: 'rgba(255,255,255,0.8)',
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.borderLight,
+        backgroundColor: COLORS.primary, // Bees Yellow
+        borderBottomWidth: 0,
         alignItems: 'center',
         justifyContent: 'space-between',
+        ...SHADOWS.md,
+        zIndex: 10,
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: COLORS.primaryDark,
+        color: '#1A1A1A', // Black text for contrast on Yellow
     },
     headerSubtitle: {
         fontSize: 12,
-        color: COLORS.textSecondary,
+        color: '#1A1A1A', // Black text
+        opacity: 0.7,
     },
     logoutButton: {
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: 'rgba(255, 56, 96, 0.1)',
+        backgroundColor: 'rgba(0, 0, 0, 0.1)', // Subtle dark background
         borderRadius: RADIUS.md,
         borderWidth: 1,
-        borderColor: 'rgba(255, 56, 96, 0.3)',
+        borderColor: 'rgba(0, 0, 0, 0.2)',
     },
     logoutText: {
-        color: COLORS.error,
+        color: '#1A1A1A',
         fontSize: 12,
         fontWeight: 'bold',
     },
@@ -311,12 +305,13 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: COLORS.bgCard,
+        backgroundColor: '#FFF',
         justifyContent: 'center',
         alignItems: 'center',
         marginHorizontal: SPACING.xs,
         borderWidth: 1,
         borderColor: COLORS.borderLight,
+        ...SHADOWS.sm,
     },
     messageBubble: {
         maxWidth: '75%',
@@ -325,22 +320,21 @@ const styles = StyleSheet.create({
         ...SHADOWS.sm,
     },
     userBubble: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.primary, // Bees Yellow
         borderBottomRightRadius: 4,
     },
     botBubble: {
-        backgroundColor: COLORS.bgCard,
+        backgroundColor: '#FFF',
         borderBottomLeftRadius: 4,
-    },
-    messageText: {
-        fontSize: 15,
-        lineHeight: 22,
+        borderWidth: 1,
+        borderColor: COLORS.borderLight,
     },
     userText: {
-        color: '#FFF',
+        color: '#1A1A1A', // Black text on Yellow
+        fontWeight: '500',
     },
     botText: {
-        color: COLORS.textPrimary,
+        color: '#333',
     },
     typingContainer: {
         padding: SPACING.sm,
@@ -351,24 +345,28 @@ const styles = StyleSheet.create({
         color: COLORS.textTertiary,
         fontStyle: 'italic',
     },
+    inputWrapper: {
+        padding: SPACING.md,
+        paddingBottom: SPACING.md + 80, // Add extra padding to clear the absolute Tab Bar
+        backgroundColor: '#F5F5F5',
+    },
     inputContainer: {
         flexDirection: 'row',
-        padding: SPACING.md,
-        backgroundColor: COLORS.bgCard,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.borderLight,
+        padding: SPACING.xs,
+        paddingHorizontal: SPACING.sm,
+        backgroundColor: '#FFF',
+        borderRadius: RADIUS.xl,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.borderLight,
+        ...SHADOWS.md,
     },
     input: {
         flex: 1,
-        backgroundColor: COLORS.gray100,
-        borderRadius: RADIUS.xl,
         paddingHorizontal: SPACING.md,
-        paddingVertical: SPACING.sm,
+        paddingVertical: SPACING.md,
         fontSize: 16,
-        color: COLORS.textPrimary,
-        marginRight: SPACING.sm,
-        minHeight: 44,
+        color: '#333',
         maxHeight: 100,
     },
     sendButton: {
@@ -378,7 +376,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        ...SHADOWS.md,
+        marginLeft: SPACING.sm,
     },
     sendButtonDisabled: {
         backgroundColor: COLORS.gray400,

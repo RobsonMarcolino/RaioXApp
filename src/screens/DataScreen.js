@@ -9,6 +9,11 @@ import { Search, X, Store, MapPin, TrendingUp, LayoutGrid, Award, ArrowLeft, Che
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - SPACING.lg * 2 - SPACING.md) / 2;
 
+// Bees Brand Colors
+const BEES_YELLOW = '#FCD535';
+const BEES_BLACK = '#1A1A1A';
+const BEES_WHITE = '#FFFFFF';
+
 // Helper to normalize strings (remove accents, lowercase)
 const normalizeString = (str) => {
     if (!str) return '';
@@ -44,6 +49,7 @@ const NETWORK_ASSETS = {
 };
 
 const DEFAULT_IMAGE = require('../../assets/icon.png');
+const HEADER_LOGO = require('../../assets/Lojas Score5.png');
 
 const DataScreen = () => {
     const [data, setData] = useState([]);
@@ -158,35 +164,35 @@ const DataScreen = () => {
 
     // Get header image for selected network
     const getHeaderImage = () => {
-        if (!selectedRede) return null;
+        if (!selectedRede) return HEADER_LOGO; // Default to LOGO1.jpg
         const normalizedRede = normalizeString(selectedRede);
-        return NETWORK_ASSETS[normalizedRede];
+        return NETWORK_ASSETS[normalizedRede] || HEADER_LOGO;
     };
 
     const headerImage = getHeaderImage();
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerWrapper}>
-                {headerImage ? (
-                    <Image
-                        source={headerImage}
-                        style={StyleSheet.absoluteFillObject}
-                        resizeMode="cover"
-                    />
-                ) : null}
+            {/* Top Section - Image Header */}
+            <View style={styles.topSection}>
+                <Image
+                    source={headerImage}
+                    style={styles.headerImage}
+                    resizeMode={selectedRede ? "cover" : "contain"}
+                />
+            </View>
 
-                <LinearGradient
-                    colors={headerImage ? ['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.5)'] : [COLORS.primary, COLORS.primaryDark]}
-                    style={styles.header}
-                >
-                    <View style={styles.headerTop}>
+            {/* Bottom Section - White Sheet */}
+            <View style={styles.bottomSection}>
+                {/* Sheet Header (Title + Search) */}
+                <View style={styles.sheetHeader}>
+                    <View style={styles.titleRow}>
                         {selectedRede && (
                             <TouchableOpacity onPress={handleBackToRedes} style={styles.backButton}>
-                                <ArrowLeft size={24} color="#FFF" />
+                                <ArrowLeft size={24} color={BEES_BLACK} />
                             </TouchableOpacity>
                         )}
-                        <Text style={[styles.title, headerImage && styles.titleWithImage]}>
+                        <Text style={styles.title}>
                             {selectedRede ? selectedRede : 'Redes Parceiras'}
                         </Text>
                     </View>
@@ -198,6 +204,7 @@ const DataScreen = () => {
                             placeholder={selectedRede ? "Buscar loja..." : "Buscar rede..."}
                             value={search}
                             onChangeText={handleSearch}
+                            placeholderTextColor={COLORS.gray400}
                         />
                         {search.length > 0 && (
                             <TouchableOpacity onPress={() => handleSearch('')}>
@@ -205,36 +212,38 @@ const DataScreen = () => {
                             </TouchableOpacity>
                         )}
                     </View>
-                </LinearGradient>
+                </View>
+
+                {/* Content List */}
+                {!selectedRede && !search ? (
+                    <FlatList
+                        key="grid"
+                        data={uniqueRedes}
+                        renderItem={renderRedeItem}
+                        keyExtractor={(item) => item}
+                        numColumns={2}
+                        contentContainerStyle={styles.gridList}
+                        columnWrapperStyle={styles.columnWrapper}
+                        showsVerticalScrollIndicator={false}
+                    />
+                ) : (
+                    <FlatList
+                        key="list"
+                        data={filteredData}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => item.eg || index.toString()}
+                        contentContainerStyle={styles.list}
+                        initialNumToRender={10}
+                        ListEmptyComponent={
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>Nenhum resultado encontrado</Text>
+                            </View>
+                        }
+                    />
+                )}
             </View>
 
-            {!selectedRede && !search ? (
-                <FlatList
-                    key="grid"
-                    data={uniqueRedes}
-                    renderItem={renderRedeItem}
-                    keyExtractor={(item) => item}
-                    numColumns={2}
-                    contentContainerStyle={styles.gridList}
-                    columnWrapperStyle={styles.columnWrapper}
-                    showsVerticalScrollIndicator={false}
-                />
-            ) : (
-                <FlatList
-                    key="list"
-                    data={filteredData}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => item.eg || index.toString()}
-                    contentContainerStyle={styles.list}
-                    initialNumToRender={10}
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>Nenhum resultado encontrado</Text>
-                        </View>
-                    }
-                />
-            )}
-
+            {/* Detail Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -328,59 +337,60 @@ const DataScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.gray50,
+        backgroundColor: BEES_YELLOW,
     },
-    headerWrapper: {
-        borderBottomLeftRadius: RADIUS.xl,
-        borderBottomRightRadius: RADIUS.xl,
+    topSection: {
+        height: '30%',
+        backgroundColor: BEES_YELLOW,
+    },
+    headerImage: {
+        width: '100%',
+        height: '100%',
+    },
+    bottomSection: {
+        flex: 1,
+        backgroundColor: BEES_WHITE,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
         overflow: 'hidden',
+        ...SHADOWS.lg,
     },
-    header: {
+    sheetHeader: {
         padding: SPACING.lg,
-        paddingTop: SPACING.xl + 20,
+        paddingBottom: SPACING.sm,
+        backgroundColor: BEES_WHITE,
     },
-    headerTop: {
+    titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center', // Centered content
         marginBottom: SPACING.md,
-        position: 'relative',
     },
     backButton: {
-        position: 'absolute',
-        left: 0,
+        marginRight: SPACING.sm,
         padding: 4,
-        zIndex: 10,
     },
     title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#FFF',
-        textAlign: 'center',
-        textShadowColor: 'rgba(0, 0, 0, 0.3)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
-    },
-    titleWithImage: {
         fontSize: 24,
-        textShadowColor: 'rgba(0, 0, 0, 0.8)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 4,
+        fontWeight: 'bold',
+        color: BEES_BLACK,
+        flex: 1,
     },
     searchContainer: {
         flexDirection: 'row',
-        backgroundColor: '#FFF',
+        backgroundColor: COLORS.gray100,
         borderRadius: RADIUS.lg,
-        padding: SPACING.sm,
+        padding: SPACING.md,
         alignItems: 'center',
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
         color: COLORS.textPrimary,
+        height: '100%',
     },
     gridList: {
         padding: SPACING.lg,
+        paddingTop: SPACING.sm,
     },
     columnWrapper: {
         justifyContent: 'space-between',
@@ -435,6 +445,8 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+        borderWidth: 1,
+        borderColor: COLORS.gray100,
     },
     itemHeader: {
         flexDirection: 'row',
@@ -457,7 +469,6 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: COLORS.textSecondary,
         fontWeight: 'bold',
-
     },
     itemName: {
         fontSize: 16,
@@ -558,7 +569,6 @@ const styles = StyleSheet.create({
     emptyContainer: {
         padding: SPACING.xl,
         alignItems: 'center',
-
     },
     emptyText: {
         color: COLORS.textSecondary,
