@@ -4,11 +4,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MessageSquare, Store, BookOpen } from 'lucide-react-native';
+import { MessageSquare, Store, BookOpen, Home } from 'lucide-react-native';
 
 import LoadingScreen from '../screens/LoadingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
+import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
 import DataScreen from '../screens/DataScreen';
 import GuideScreen from '../screens/GuideScreen';
@@ -50,6 +51,14 @@ const TabNavigator = () => {
                 tabBarInactiveTintColor: '#666666', // Dark Gray
             }}
         >
+            <Tab.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{
+                    tabBarLabel: 'Início',
+                    tabBarIcon: ({ color, size }) => <Home color={color} size={size} />
+                }}
+            />
             <Tab.Screen
                 name="Chat"
                 component={ChatScreen}

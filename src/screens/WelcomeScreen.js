@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Dimensions, ActivityIndicator } from 'react-native';
 import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
@@ -7,13 +7,29 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 const { width, height } = Dimensions.get('window');
 
 const WelcomeScreen = ({ navigation }) => {
+    const [imageLoaded, setImageLoaded] = React.useState(false);
+
     return (
         <View style={styles.container}>
             <ImageBackground
                 source={require('../../assets/BoasVind.png')}
                 style={styles.backgroundImage}
                 resizeMode="cover"
+                onLoadEnd={() => setImageLoaded(true)}
             >
+                {/* Loading Indicator */}
+                {!imageLoaded && (
+                    <LinearGradient
+                        colors={['#000000', '#1A1A1A', '#332B00']} // Gradient from Black to Dark Yellowish-Black
+                        style={styles.loadingContainer}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 0, y: 1 }}
+                    >
+                        <ActivityIndicator size="large" color={COLORS.primary} />
+                        <Text style={styles.loadingText}>Carregando...</Text>
+                    </LinearGradient>
+                )}
+
                 {/* TV Screen Video Overlay */}
                 {/* Adjusted coordinates to move UP into the monitor head */}
                 <View style={styles.tvScreenContainer}>
@@ -59,6 +75,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#000',
+    },
+    loadingContainer: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 20,
+    },
+    loadingText: {
+        marginTop: SPACING.md,
+        color: COLORS.primary,
+        fontSize: 14,
+        fontWeight: 'bold',
     },
     backgroundImage: {
         flex: 1,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, User, Bot } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
@@ -177,13 +177,14 @@ const ChatScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <LinearGradient
-                colors={[COLORS.primary, '#E6C229']} // Gradient from Bees Yellow to slightly darker
+            {/* Header */}
+            <ImageBackground
+                source={require('../../assets/header.png')}
                 style={styles.header}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
+                resizeMode="cover"
             >
-                <View style={{ flex: 1, alignItems: 'center' }}>
+                {/* Overlay for better text readability if needed, or just the content */}
+                <View style={styles.headerContent}>
                     <Text style={styles.headerTitle}>Raio-X Score 5</Text>
                     <Text style={styles.headerSubtitle}>
                         {csvData.length > 0 ? `${csvData.length} estabelecimentos` : 'Carregando dados...'}
@@ -200,7 +201,7 @@ const ChatScreen = ({ navigation }) => {
                 >
                     <Text style={styles.logoutText}>Sair</Text>
                 </TouchableOpacity>
-            </LinearGradient>
+            </ImageBackground>
 
             <FlatList
                 ref={flatListRef}
@@ -256,33 +257,43 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: SPACING.md,
         paddingTop: SPACING.xl + 20, // Status bar padding
-        backgroundColor: COLORS.primary, // Bees Yellow
-        borderBottomWidth: 0,
+        // backgroundColor removed as it's now an image
         alignItems: 'center',
         justifyContent: 'space-between',
         ...SHADOWS.md,
         zIndex: 10,
+        overflow: 'hidden', // Ensure image stays within bounds if rounded
+    },
+    headerContent: {
+        flex: 1,
+        alignItems: 'center', // Center text
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 20, // Slightly larger
         fontWeight: 'bold',
-        color: '#1A1A1A', // Black text for contrast on Yellow
+        color: '#FFF', // White text for better contrast on image
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     headerSubtitle: {
         fontSize: 12,
-        color: '#1A1A1A', // Black text
-        opacity: 0.7,
+        color: '#FFF', // White text
+        opacity: 0.9,
+        textShadowColor: 'rgba(0, 0, 0, 0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     logoutButton: {
         paddingHorizontal: 12,
         paddingVertical: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.1)', // Subtle dark background
+        backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white
         borderRadius: RADIUS.md,
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.2)',
+        borderColor: 'rgba(255, 255, 255, 0.3)',
     },
     logoutText: {
-        color: '#1A1A1A',
+        color: '#FFF',
         fontSize: 12,
         fontWeight: 'bold',
     },
