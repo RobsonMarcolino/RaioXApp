@@ -22,3 +22,10 @@ O **Raio-X App** é uma ferramenta móvel desenvolvida para auxiliar o time de c
 
 ---
 Desenvolvido por **Robson Marcolino**.
+
+## Prints
+
+![TelaInicial](https://github.com/user-attachments/assets/50314a61-3943-4749-8ff2-f5a3776bee6c)
+
+![RaioXapp](https://github.com/user-attachments/assets/d43e0ab1-95ba-454a-9a0f-38a5b7440d90)
+
