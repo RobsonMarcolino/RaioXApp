@@ -48,7 +48,7 @@ const NETWORK_ASSETS = {
 };
 
 const DEFAULT_IMAGE = require('../../assets/icon.png');
-const HEADER_LOGO = require('../../assets/Lojas Score5.png');
+const HEADER_LOGO = require('../../assets/lojas_score5.png');
 
 const AnimatedItem = ({ index, children }) => {
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
