@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
     },
     backgroundImage: {
         flex: 1,
-        width: width,
-        height: height,
+        width: '100%',
+        height: '100%',
     },
     tvScreenContainer: {
         position: 'absolute',

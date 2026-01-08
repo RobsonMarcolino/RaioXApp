@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, Modal, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, Modal, ScrollView, Image, Dimensions, Animated } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData } from '../services/api';
 import { Search, X, Store, MapPin, TrendingUp, LayoutGrid, Award, ArrowLeft, ChevronRight } from 'lucide-react-native';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - SPACING.lg * 2 - SPACING.md) / 2;
+import SkeletonCard from '../components/SkeletonCard';
 
 // Bees Brand Colors
 const BEES_YELLOW = '#FCD535';
@@ -51,6 +50,39 @@ const NETWORK_ASSETS = {
 const DEFAULT_IMAGE = require('../../assets/icon.png');
 const HEADER_LOGO = require('../../assets/Lojas Score5.png');
 
+const AnimatedItem = ({ index, children }) => {
+    const fadeAnim = React.useRef(new Animated.Value(0)).current;
+    const slideAnim = React.useRef(new Animated.Value(50)).current;
+
+    React.useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+                delay: index * 100, // Stagger effect
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+                delay: index * 100,
+            }),
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.View
+            style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+            }}
+        >
+            {children}
+        </Animated.View>
+    );
+};
+
 const DataScreen = () => {
     const [data, setData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -58,15 +90,20 @@ const DataScreen = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedRede, setSelectedRede] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         loadData();
     }, []);
 
     const loadData = async () => {
+        setIsLoading(true);
+        // Artificial delay for effect
+        await new Promise(resolve => setTimeout(resolve, 1500));
         const sheetData = await loadSheetData();
         setData(sheetData);
         setFilteredData(sheetData);
+        setIsLoading(false);
     };
 
     // Extract unique networks
@@ -136,23 +173,25 @@ const DataScreen = () => {
         );
     };
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity onPress={() => openModal(item)} activeOpacity={0.7}>
-            <View style={styles.itemCard}>
-                <View style={styles.itemHeader}>
-                    <Text style={styles.itemEg}>{item.eg}</Text>
-                    <View style={styles.badgeContainer}>
-                        <Text style={styles.badgeText}>{item.gn || 'N/A'}</Text>
+    const renderItem = ({ item, index }) => (
+        <AnimatedItem index={index}>
+            <TouchableOpacity onPress={() => openModal(item)} activeOpacity={0.7}>
+                <View style={styles.itemCard}>
+                    <View style={styles.itemHeader}>
+                        <Text style={styles.itemEg}>{item.eg}</Text>
+                        <View style={styles.badgeContainer}>
+                            <Text style={styles.badgeText}>{item.gn || 'N/A'}</Text>
+                        </View>
                     </View>
+                    <Text style={styles.itemName}>{item.nome_fantasia}</Text>
+                    <View style={styles.itemRow}>
+                        <MapPin size={14} color={COLORS.textTertiary} />
+                        <Text style={styles.itemDetail}>{item.rede}</Text>
+                    </View>
+                    <Text style={styles.clickHint}>Ver detalhes</Text>
                 </View>
-                <Text style={styles.itemName}>{item.nome_fantasia}</Text>
-                <View style={styles.itemRow}>
-                    <MapPin size={14} color={COLORS.textTertiary} />
-                    <Text style={styles.itemDetail}>{item.rede}</Text>
-                </View>
-                <Text style={styles.clickHint}>Ver detalhes</Text>
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+        </AnimatedItem>
     );
 
     const renderDetailRow = (label, value) => (
@@ -214,8 +253,19 @@ const DataScreen = () => {
                     </View>
                 </View>
 
+
+
+                {/* Loading Skeletons */}
+                {isLoading && (
+                    <View style={styles.list}>
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <SkeletonCard key={i} height={100} style={{ marginBottom: 12 }} />
+                        ))}
+                    </View>
+                )}
+
                 {/* Content List */}
-                {!selectedRede && !search ? (
+                {!isLoading && (!selectedRede && !search ? (
                     <FlatList
                         key="grid"
                         data={uniqueRedes}
@@ -240,7 +290,7 @@ const DataScreen = () => {
                             </View>
                         }
                     />
-                )}
+                ))}
             </View>
 
             {/* Detail Modal */}
@@ -271,6 +321,47 @@ const DataScreen = () => {
                                         {renderDetailRow('EG', selectedItem.eg)}
                                         {renderDetailRow('Nome', selectedItem.nome_fantasia)}
                                         {renderDetailRow('Rede', selectedItem.rede)}
+                                    </View>
+                                </View>
+
+                                {/* Performance Charts */}
+                                <View style={styles.modalSection}>
+                                    <View style={styles.sectionHeader}>
+                                        <TrendingUp size={20} color={COLORS.primary} />
+                                        <Text style={styles.sectionTitle}>Visão Gráfica</Text>
+                                    </View>
+                                    <View style={[styles.card, { alignItems: 'center' }]}>
+                                        <Text style={styles.chartTitle}>Share de Espaço (M0)</Text>
+                                        <PieChart
+                                            data={[
+                                                {
+                                                    name: 'M0',
+                                                    population: parseFloat(selectedItem.share_de_espaco_m0?.replace('%', '') || 0),
+                                                    color: COLORS.primary,
+                                                    legendFontColor: '#7F7F7F',
+                                                    legendFontSize: 12,
+                                                },
+                                                {
+                                                    name: 'Restante',
+                                                    population: 100 - parseFloat(selectedItem.share_de_espaco_m0?.replace('%', '') || 0),
+                                                    color: '#F0F0F0',
+                                                    legendFontColor: '#7F7F7F',
+                                                    legendFontSize: 12,
+                                                },
+                                            ]}
+                                            width={Dimensions.get('window').width * 0.85}
+                                            height={180}
+                                            chartConfig={{
+                                                backgroundColor: '#ffffff',
+                                                backgroundGradientFrom: '#ffffff',
+                                                backgroundGradientTo: '#ffffff',
+                                                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                                            }}
+                                            accessor="population"
+                                            backgroundColor="transparent"
+                                            paddingLeft="15"
+                                            absolute
+                                        />
                                     </View>
                                 </View>
 
@@ -396,8 +487,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     redeCard: {
-        width: CARD_WIDTH,
-        height: CARD_WIDTH * 0.8,
+        width: '48%', // Responsive width
+        height: 160,
         borderRadius: RADIUS.lg,
         marginBottom: SPACING.md,
         overflow: 'hidden',
@@ -573,6 +664,56 @@ const styles = StyleSheet.create({
     emptyText: {
         color: COLORS.textSecondary,
         fontSize: 16,
+        fontFamily: 'Poppins_500Medium',
+    },
+    // New Font Styles Override
+    title: {
+        fontSize: 24,
+        color: BEES_BLACK,
+        flex: 1,
+        fontFamily: 'Poppins_700Bold',
+    },
+    redeName: {
+        color: '#FFF',
+        fontSize: 16,
+        marginBottom: 4,
+        fontFamily: 'Poppins_700Bold',
+    },
+    itemEg: {
+        color: COLORS.primary,
+        fontSize: 16,
+        fontFamily: 'Poppins_700Bold',
+    },
+    itemName: {
+        fontSize: 16,
+        color: COLORS.textPrimary,
+        marginBottom: SPACING.xs,
+        fontFamily: 'Poppins_600SemiBold',
+    },
+    detailLabel: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+        flex: 1,
+        fontFamily: 'Poppins_400Regular',
+    },
+    detailValue: {
+        fontSize: 14,
+        color: COLORS.textPrimary,
+        flex: 1,
+        textAlign: 'right',
+        fontFamily: 'Poppins_600SemiBold',
+    },
+    modalTitle: {
+        fontSize: 22,
+        color: COLORS.textPrimary,
+        fontFamily: 'Poppins_700Bold',
+    },
+    sectionTitle: {
+        fontSize: 16,
+        color: COLORS.primary,
+        marginLeft: SPACING.sm,
+        textTransform: 'uppercase',
+        fontFamily: 'Poppins_700Bold',
     },
 });
 

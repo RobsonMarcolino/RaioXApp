@@ -24,31 +24,33 @@ const TabNavigator = () => {
             screenOptions={{
                 headerShown: false,
                 tabBarStyle: {
-                    borderTopWidth: 0,
-                    elevation: 10,
+                    position: 'absolute',
+                    bottom: 25,
+                    left: 20,
+                    right: 20,
+                    borderRadius: 35,
+                    height: 70,
+                    backgroundColor: 'transparent',
+                    elevation: 5,
                     shadowColor: '#000',
-                    shadowOffset: { width: 0, height: -4 },
+                    shadowOffset: { width: 0, height: 5 },
                     shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    height: 60 + (Platform.OS === 'ios' ? 20 : 0),
-                    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
-                    paddingTop: 8,
-                    backgroundColor: 'transparent', // Important for gradient to show
-                    position: 'absolute', // Needed for transparency to work in some cases, or just to ensure background shows
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
+                    shadowRadius: 5,
+                    borderTopWidth: 0,
+                    paddingBottom: 0,
+                    paddingTop: 0,
+                    zIndex: 100,
                 },
                 tabBarBackground: () => (
                     <LinearGradient
-                        colors={['#2A2A2A', '#000000']} // Gradient from Dark Gray to Black
-                        style={{ flex: 1 }}
+                        colors={['#2A2A2A', '#000000']}
+                        style={{ flex: 1, borderRadius: 35 }}
                         start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
+                        end={{ x: 1, y: 1 }}
                     />
                 ),
-                tabBarActiveTintColor: COLORS.primary, // Bees Yellow
-                tabBarInactiveTintColor: '#666666', // Dark Gray
+                tabBarActiveTintColor: COLORS.primary,
+                tabBarInactiveTintColor: '#666666',
             }}
         >
             <Tab.Screen

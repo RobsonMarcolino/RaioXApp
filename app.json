@@ -23,7 +23,16 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/Logo (2).png"
-    }
+      "favicon": "./assets/Logo (2).png",
+      "display": "standalone",
+      "themeColor": "#FCD535",
+      "backgroundColor": "#ffffff",
+      "startUrl": "/",
+      "description": "Sistema de Análise de Performance Raio-X Score 5",
+      "shortName": "Raio-X"
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

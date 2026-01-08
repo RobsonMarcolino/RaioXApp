@@ -30,8 +30,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     image: {
-        width: width,
-        height: height,
+        width: '100%',
+        height: '100%',
     },
 });
 

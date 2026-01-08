@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Linking, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Linking, FlatList, Platform, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MessageSquare, Store, BookOpen, TrendingUp, Bell, User, Bot, ExternalLink, ChevronRight, BarChart2, FileText, AlertTriangle } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData } from '../services/api';
 
-const { width } = Dimensions.get('window');
+const { width: windowWidth } = Dimensions.get('window');
+// Clamp width on web to match MobileContainer's max width (approx 420)
+const width = Platform.OS === 'web' ? Math.min(windowWidth, 420) : windowWidth;
 const CARD_WIDTH = width - (SPACING.lg * 2); // Full width minus padding
 
 const RAW_LINKS = [
@@ -43,6 +45,7 @@ const HomeScreen = ({ navigation }) => {
     const [storeCount, setStoreCount] = useState(0);
     const flatListRef = useRef(null);
     const [currentIndex, setCurrentIndex] = useState(INITIAL_INDEX);
+    const scrollY = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
         loadData();
@@ -138,36 +141,63 @@ const HomeScreen = ({ navigation }) => {
     // Calculate actual active index for pagination dots (0, 1, or 2)
     const activeDotIndex = currentIndex % RAW_LINKS.length;
 
+    // Parallax Interpolation
+    const headerTranslateY = scrollY.interpolate({
+        inputRange: [0, 150],
+        outputRange: [0, -75], // Move header up half the speed for parallax feel
+        extrapolate: 'clamp',
+    });
+
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, 150],
+        outputRange: [1, 0.9],
+        extrapolate: 'clamp',
+    });
+
     return (
         <View style={styles.container}>
             {/* Header Section */}
-            <LinearGradient
-                colors={['#FCD535', '#F4B400']}
-                style={styles.header}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-            >
-                <Image
-                    source={require('../../assets/header_pattern.png')}
-                    style={styles.headerPattern}
-                    resizeMode="cover"
-                />
-                <View style={styles.headerTop}>
-                    <View>
-                        <Text style={styles.greetingText}>Olá,</Text>
-                        <Text style={styles.userName}>AMBEVER</Text>
-                        <Text style={styles.userSubtitle}>Off trade Mg</Text>
+            <Animated.View style={[
+                styles.headerWrapper,
+                {
+                    transform: [{ translateY: headerTranslateY }],
+                    opacity: headerOpacity,
+                    zIndex: 10
+                }
+            ]}>
+                <LinearGradient
+                    colors={['#FCD535', '#F4B400']}
+                    style={styles.header}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                >
+                    <Image
+                        source={require('../../assets/header_pattern.png')}
+                        style={styles.headerPattern}
+                        resizeMode="cover"
+                    />
+                    <View style={styles.headerTop}>
+                        <View>
+                            <Text style={styles.greetingText}>Olá,</Text>
+                            <Text style={styles.userName}>AMBEVER</Text>
+                            <Text style={styles.userSubtitle}>Off trade Mg</Text>
+                        </View>
+                        <TouchableOpacity style={styles.profileButton}>
+                            <Bot size={28} color="#1A1A1A" />
+                        </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.profileButton}>
-                        <Bot size={28} color="#1A1A1A" />
-                    </TouchableOpacity>
-                </View>
-            </LinearGradient>
+                </LinearGradient>
+            </Animated.View>
 
-            <ScrollView
+            <Animated.ScrollView
                 style={styles.content}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                    { useNativeDriver: Platform.OS !== 'web' } // Web doesn't fully support layout animation driver
+                )}
+                scrollEventThrottle={16}
             >
                 {/* Main Action - AI Chat */}
                 <TouchableOpacity
@@ -261,7 +291,7 @@ const HomeScreen = ({ navigation }) => {
                         ))}
                     </View>
                 </View>
-            </ScrollView>
+            </Animated.ScrollView>
         </View>
     );
 };
@@ -279,7 +309,6 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 30,
         ...SHADOWS.md,
         overflow: 'hidden', // Ensure pattern stays inside
-        position: 'relative',
     },
     headerPattern: {
         ...StyleSheet.absoluteFillObject,
@@ -432,7 +461,25 @@ const styles = StyleSheet.create({
     scrollContent: {
         padding: SPACING.lg,
         paddingBottom: 100,
+        paddingTop: 180, // Push content down to accommodate the absolute header
     },
+    headerWrapper: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+    },
+    // We need to push the scroll content down so it starts below the header
+    // But since we want parallax, we usually start with header visible. 
+    // Wait, typical parallax has header AT TOP, and content scrolls UNDER it or it moves.
+    // If I translate header UP, it disappears.
+    // Let's adjust content padding to start lower if the header were absolute.
+    // But my current code kept the structure: Header -> ScrollView.
+    // If I animate Header in place, the ScrollView is below it. If I translate Header Y -50, the SVG moves up, leaving white space.
+    // Fix: Structure needs to be: Container -> [Running Header (Abs)] -> ScrollView (with PaddingTop).
+    // Let's modify Container slightly in a future step or just accept the View structure.
+    // Actually, making header absolute is safer for Parallax.
     mainCard: {
         height: 180,
         borderRadius: RADIUS.xl,
@@ -496,7 +543,7 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     cardSmall: {
-        width: (width - SPACING.lg * 3) / 2,
+        width: '48%', // Use percentage for responsiveness
         height: 140,
     },
     cardLarge: {
