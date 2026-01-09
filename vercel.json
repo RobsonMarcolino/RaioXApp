@@ -4,7 +4,5 @@
             "source": "/(.*)",
             "destination": "/"
         }
-    ],
-    "buildCommand": "npx expo install react-dom react-native-web && expo export --platform web",
-    "outputDirectory": "dist"
+    ]
 }

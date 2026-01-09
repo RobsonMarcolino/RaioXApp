@@ -96,7 +96,14 @@ const parseCSVRobust = (text) => {
 
 export const callGoogleAI = async (prompt) => {
     try {
-        const response = await fetch(CLOUD_FUNCTION_URL, {
+        // Use local proxy if on web to avoid CORS, otherwise direct
+        // Note: For production web deployment on Vercel, relative path '/api/chat' works.
+        // For local development, you might need the full URL if not proxying package.json
+        const url = (typeof window !== 'undefined')
+            ? "/api/chat"
+            : CLOUD_FUNCTION_URL;
+
+        const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
