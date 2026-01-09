@@ -122,7 +122,7 @@ export const callGoogleAI = async (prompt) => {
         return data.resposta;
     } catch (error) {
         console.error("Erro ao chamar IA:", error);
-        return "❌ Desculpe, não consegui me conectar com o sistema no momento.";
+        return `❌ FALHA DETALHADA: ${error.message}`;
     }
 };
 
