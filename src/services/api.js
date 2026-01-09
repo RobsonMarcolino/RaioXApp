@@ -101,6 +101,12 @@ const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 export const callGoogleAI = async (prompt) => {
     try {
+        // Check if running on localhost
+        if (typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' || window.location.hostname.includes('192.168'))) {
+            throw new Error("⚠️ O 'Proxy da Vercel' só funciona no site publicado! Esse erro acontece porque você está testando no seu computador (Localhost). Por favor, abra o link oficial do deploy (vercel.app) para testar a IA.");
+        }
+
         console.log("🤖 Enviando prompt para o Vercel Proxy...");
 
         // Relative path works on Vercel deployment automatically
@@ -128,13 +134,13 @@ export const callGoogleAI = async (prompt) => {
             data = JSON.parse(responseText);
         } catch (e) {
             console.error("Recebido do servidor (não é JSON):", responseText.substring(0, 500));
-            throw new Error(`O servidor retornou algo inválido (provavelmente HTML): ${responseText.substring(0, 20)}...`);
+            throw new Error(`O servidor retornou algo inválido (provavelmente HTML). Se você está no Localhost, isso é esperado (leia o aviso acima).`);
         }
 
         return data.resposta;
     } catch (error) {
         console.error("Erro ao chamar IA:", error);
-        return `❌ Erro na IA: ${error.message}`;
+        return `❌ ${error.message}`;
     }
 };
 
