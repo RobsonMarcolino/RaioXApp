@@ -101,15 +101,29 @@ const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 export const callGoogleAI = async (prompt) => {
     try {
-        console.log("🤖 Enviando prompt para o Gemini (Direto)...");
+        console.log("🤖 Enviando prompt para o Vercel Proxy...");
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        // Relative path works on Vercel deployment automatically
+        // thanks to our vercel.json rewrites
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+            }),
+        });
 
-        return text;
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erro API (${response.status}): ${errorText.substring(0, 100)}`);
+        }
+
+        const data = await response.json();
+        return data.resposta;
     } catch (error) {
-        console.error("Erro ao chamar Gemini:", error);
+        console.error("Erro ao chamar IA:", error);
         return `❌ Erro na IA: ${error.message}`;
     }
 };
