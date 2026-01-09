@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -16,23 +14,31 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    const CLOUD_FUNCTION_URL = "https://analisareg2-770471336573.us-central1.run.app";
+
     try {
-        const { prompt } = req.body;
+        const response = await fetch(CLOUD_FUNCTION_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(req.body),
+        });
 
-        // Using the user provided key securely on the server side
-        const genAI = new GoogleGenerativeAI("AIzaSyBTZiUDC2INIspbdFm6R3dZX1A4ls7olSI");
-        // Using 1.5-flash as it is the current standard. 
-        // If this fails, we can fallback to gemini-pro later.
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // Tente processar o JSON, se falhar, leia como texto para ver o erro
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("Erro ao parsear JSON do Google Cloud:", text);
+            return res.status(500).json({ error: `Backend retornou algo inválido: ${text.substring(0, 50)}...` });
+        }
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        return res.status(200).json({ resposta: text });
+        return res.status(response.status).json(data);
 
     } catch (error) {
-        console.error("Vercel AI Error:", error);
-        return res.status(500).json({ error: error.message || "Erro interno na IA" });
+        console.error("Proxy Error:", error);
+        return res.status(500).json({ error: "Falha ao conectar com Google Cloud" });
     }
 }
