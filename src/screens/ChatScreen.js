@@ -95,7 +95,7 @@ const ChatScreen = ({ navigation }) => {
             console.error(error);
             const errorMessage = {
                 id: Date.now().toString() + '_err',
-                text: 'Desculpe, ocorreu um erro ao processar sua mensagem.',
+                text: `❌ Erro: ${error.message}`,
                 sender: 'bot',
                 timestamp: new Date(),
             };

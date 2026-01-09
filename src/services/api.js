@@ -114,7 +114,8 @@ export const callGoogleAI = async (prompt) => {
         });
 
         if (!response.ok) {
-            throw new Error(`Erro no Backend: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Falha na conexão (${response.status}): ${errorText.substring(0, 50)}`);
         }
 
         const data = await response.json();
