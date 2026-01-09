@@ -97,7 +97,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // Inicializa o SDK do Gemini com a chave fornecida
 const genAI = new GoogleGenerativeAI("AIzaSyBTZiUDC2INIspbdFm6R3dZX1A4ls7olSI");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 export const callGoogleAI = async (prompt) => {
     try {
