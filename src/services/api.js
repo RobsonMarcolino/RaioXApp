@@ -1,5 +1,4 @@
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfDeTnX48gWUAbXL_LcueTA-TMVcgqAe8VxBXjrlFnyGgQxZuZEs-gh7B1vDNYVn8efcxUJqB_QIx-/pub?output=csv";
-const CLOUD_FUNCTION_URL = "https://analisareg2-770471336573.us-central1.run.app";
 
 export const loadSheetData = async () => {
     try {
@@ -94,35 +93,24 @@ const parseCSVRobust = (text) => {
     return [];
 };
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Inicializa o SDK do Gemini com a chave fornecida
+const genAI = new GoogleGenerativeAI("AIzaSyBTZiUDC2INIspbdFm6R3dZX1A4ls7olSI");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 export const callGoogleAI = async (prompt) => {
     try {
-        // Use local proxy if on web to avoid CORS, otherwise direct
-        // Note: For production web deployment on Vercel, relative path '/api/chat' works.
-        // For local development, you might need the full URL if not proxying package.json
-        const url = (typeof window !== 'undefined')
-            ? "/api/chat"
-            : CLOUD_FUNCTION_URL;
+        console.log("🤖 Enviando prompt para o Gemini (Direto)...");
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                prompt: prompt,
-            }),
-        });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Falha na conexão (${response.status}): ${errorText.substring(0, 50)}`);
-        }
-
-        const data = await response.json();
-        return data.resposta;
+        return text;
     } catch (error) {
-        console.error("Erro ao chamar IA:", error);
-        return `❌ FALHA DETALHADA: ${error.message}`;
+        console.error("Erro ao chamar Gemini:", error);
+        return `❌ Erro na IA: ${error.message}`;
     }
 };
 
