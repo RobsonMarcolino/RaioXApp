@@ -120,7 +120,17 @@ export const callGoogleAI = async (prompt) => {
             throw new Error(`Erro API (${response.status}): ${errorText.substring(0, 100)}`);
         }
 
-        const data = await response.json();
+        // Read text first to debug if it's HTML
+        const responseText = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Recebido do servidor (não é JSON):", responseText.substring(0, 500));
+            throw new Error(`O servidor retornou algo inválido (provavelmente HTML): ${responseText.substring(0, 20)}...`);
+        }
+
         return data.resposta;
     } catch (error) {
         console.error("Erro ao chamar IA:", error);
