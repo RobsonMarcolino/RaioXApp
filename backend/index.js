@@ -110,21 +110,44 @@ functions.http('analisar', async (req, res) => {
     }
 
     try {
-        // --- FIX DO ERRO 400: Parse manual se vier string ---
+        // --- DEBUG DETALHADO DO BODY ---
         let body = req.body;
-        if (typeof body === 'string') {
-            try { body = JSON.parse(body); } catch (e) { console.warn("Body não era JSON puro:", e); }
+        console.log("🔍 TIPO DO BODY:", typeof body);
+        console.log("🔍 CONTEÚDO BODY (JSON):", JSON.stringify(body));
+
+        // Fallback: Se body vier vazio ou undefined, tenta ler rawBody (buffer)
+        if (!body || (typeof body === 'object' && Object.keys(body).length === 0)) {
+            console.warn("⚠️ req.body vazio! Tentando ler req.rawBody...");
+            if (req.rawBody) {
+                try {
+                    const rawText = req.rawBody.toString('utf8');
+                    console.log("📝 rawBody encontrado:", rawText);
+                    body = JSON.parse(rawText);
+                } catch (e) {
+                    console.error("❌ Falha ao converter rawBody:", e);
+                }
+            }
         }
-        // Garante objeto vazio se null
+
+        // Se ainda for string (caso raro)
+        if (typeof body === 'string') {
+            try { body = JSON.parse(body); } catch (e) { console.warn("Body string -> falha parse:", e); }
+        }
+
+        // Garante objeto nulo safe
         body = body || {};
 
         const { message, eg } = body;
 
-        console.log(`📡 Recebido: EG [${eg}] - Msg [${message}]`);
+        console.log(`📡 DADOS FINAIS: EG [${eg}] - Msg [${message}]`);
 
         if (!message) {
-            console.error("⛔ Erro: Mensagem vazia.");
-            return res.status(400).json({ error: 'Nenhuma mensagem recebida no body.' });
+            console.error("⛔ Erro: Mensagem continua vazia após tentativas.");
+            return res.status(400).json({
+                error: 'Nenhuma mensagem recebida.',
+                debug_body_type: typeof req.body,
+                debug_raw_body: req.rawBody ? 'sim' : 'nao'
+            });
         }
 
         // Fluxo normal
