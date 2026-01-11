@@ -93,7 +93,7 @@ const gerarAnaliseProfunda = (loja) => {
     const gaps = [];
     if (!checkStatus(loja.spaten)) gaps.push("Spaten");
     if (!checkStatus(loja.corona)) gaps.push("Corona");
-    if (!checkStatus(loja.stella)) gaps.push("Stella"); // Adicionado Stella
+    if (!checkStatus(loja.stella)) gaps.push("Stella");
     if (!checkStatus(loja.ponto_extra)) gaps.push("Ponto Extra");
 
     // Variação da intro para parecer humano
@@ -131,23 +131,16 @@ const gerarAnaliseProfunda = (loja) => {
     return txt;
 };
 
-// --- 3. BASE DE CONHECIMENTO (Perguntas e Respostas Gerais) ---
-const baseConhecimento = {
-    conceitos: {
-        "share": "📊 **O que é Share de Espaço?**\nRepresenta a % de espaço que nossos produtos ocupam na gôndola em comparação ao total da categoria. A meta é sempre ter Dominância (>50%).",
-        "score": "🏆 **Sobre o Score 5:**\nÉ nosso principal KPI de execução. Avalia: Share, Presença de Spaten/Corona/Stella, Ponto Extra e Geladeira.",
-        "gn": "👤 **GN (Gerente de Negócios):**\nÉ o responsável pela carteira de clientes e gestão dos vendedores e promotores da região."
-    },
-    produtos: {
-        "spaten": "🍺 **Spaten:** Cerveja puro malte estilo Munich Helles. Foco em harmonização e qualidade. Item OBRIGATÓRIO no Mix Premium.",
-        "corona": "🍋 **Corona:** Cerveja premium mais vendida. Foco em ocasiões de consumo diurno e 'Sunset'.",
-        "stella": "🍺 **Stella Artois:** Cerveja premium de origem belga. Foco em ocasiões especiais e gastronomia."
-    }
+// --- 3. BASE DE PRODUTOS (Apenas Detalhes Úteis) ---
+const produtosInfo = {
+    "spaten": "🍺 **Spaten:** Cerveja puro malte estilo Munich Helles. Item OBRIGATÓRIO no Mix.",
+    "corona": "🍋 **Corona:** Cerveja premium mais vendida. Foco em ocasiões 'Sunset'.",
+    "stella": "🍺 **Stella Artois:** Cerveja premium belga. Foco em gastronomia."
 };
 
 // --- 4. SERVIDOR PRINCIPAL (A "IA" Híbrida) ---
 functions.http('analisar', async (req, res) => {
-    // Configurações de CORS (Permitir acesso do app)
+    // Configurações de CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -161,60 +154,40 @@ functions.http('analisar', async (req, res) => {
         let inputUsuario = (body.message || body.prompt || "").toString();
         let egClicado = body.eg;
         let textoLimpo = normalizar(inputUsuario);
-        const saudacaoAtual = getSaudacaoTemporal(); // Bom dia/tarde/noite
+        const saudacaoAtual = getSaudacaoTemporal();
 
         let respostaFinal = "";
 
-        // --- ROTEADOR INTELIGENTE DE INTENÇÕES ---
+        // --- ROTEADOR INTELIGENTE ---
 
-        // 1. O usuário mandou uma SAUDAÇÃO? (Espelhamento Inteligente)
-        if (textoLimpo.match(/^(bom dia|boa tarde|boa noite)/)) {
-            // Se o usuário diz "Bom dia", a gente responde "Bom dia" (se for de manhã) ou corrige educadamente
-            respostaFinal = `👋 ${saudacaoAtual}! Sou o Assistente Score 5.\n\nComo posso ajudar na sua análise hoje?\nDigite o **Nome da Loja**, o **EG** ou peça o **Menu**.`;
-        }
-        else if (textoLimpo.match(/^(oi|ola|e ai|opa|alo)/)) {
-            const respostasOi = [
-                `👋 Olá! ${saudacaoAtual}. Pronto para analisar?`,
-                `🤖 Olá! Sistema Score 5 online.`,
-                `👋 Oi! Qual loja vamos verificar agora?`
-            ];
-            respostaFinal = sortear(respostasOi);
+        // 1. Saudações (Resposta Curta e Profissional)
+        if (textoLimpo.match(/^(bom dia|boa tarde|boa noite|oi|ola|e ai|opa)/)) {
+            respostaFinal = `👋 ${saudacaoAtual}! Assistente Raio-X Score 5 pronto.\n\nQual loja vamos analisar agora? (Digite Nome ou EG)`;
         }
 
-        // 2. O usuário clicou no MENU ou pediu AJUDA?
+        // 2. Menu/Ajuda (Versão Lean)
         else if (textoLimpo.includes("menu") || textoLimpo.includes("ajuda") || textoLimpo.includes("opcoes")) {
-            respostaFinal = `🤖 **Central de Ajuda Score 5**\n\n` +
-                `1️⃣ **Análise de Loja:** Digite o EG (ex: 79499) ou Nome (ex: Supermercado BH).\n` +
-                `2️⃣ **Conceitos:** Pergunte "O que é Share?" ou "O que é Score?".\n` +
-                `3️⃣ **Produtos:** Pergunte sobre "Spaten", "Corona" ou "Stella".\n\n` +
-                `👇 *Digite sua dúvida abaixo:*`;
+            respostaFinal = `🤖 **Central Rápida**\n\n` +
+                `1️⃣ Digite o **EG** ou **Nome** para analisar a loja.\n` +
+                `2️⃣ Pergunte sobre **Spaten**, **Corona** ou **Stella** para detalhes do produto.\n\n` +
+                `👇 Aguardando seu comando:`;
         }
 
-        // 3. Perguntas conceituais (Base de Conhecimento)
-        else if (textoLimpo.includes("share") || textoLimpo.includes("espaco")) respostaFinal = baseConhecimento.conceitos["share"];
-        else if (textoLimpo.includes("score")) respostaFinal = baseConhecimento.conceitos["score"];
-        else if (textoLimpo.includes("gn") && textoLimpo.length < 5) respostaFinal = baseConhecimento.conceitos["gn"]; // Só se digitar "o que é gn"
-        else if (textoLimpo.includes("spaten")) respostaFinal = baseConhecimento.produtos["spaten"];
-        else if (textoLimpo.includes("corona")) respostaFinal = baseConhecimento.produtos["corona"];
-        else if (textoLimpo.includes("stella")) respostaFinal = baseConhecimento.produtos["stella"];
+        // 3. Perguntas de Produto (Sem conceitos básicos)
+        else if (textoLimpo.includes("spaten")) respostaFinal = produtosInfo["spaten"];
+        else if (textoLimpo.includes("corona")) respostaFinal = produtosInfo["corona"];
+        else if (textoLimpo.includes("stella")) respostaFinal = produtosInfo["stella"];
 
         // 4. Agradecimentos
         else if (textoLimpo.includes("obrigado") || textoLimpo.includes("valeu") || textoLimpo.includes("top")) {
-            const agradecimentos = [
-                "🤝 Tamo junto! Foco na execução.",
-                "🚀 Disponha! Se precisar de mais dados, é só chamar.",
-                "👊 Conte comigo. Vamos buscar esse Share!"
-            ];
-            respostaFinal = sortear(agradecimentos);
+            respostaFinal = "🤝 Tamo junto! Foco total na execução!";
         }
 
-        // 5. O usuário quer uma LOJA (Prioridade Máxima)
+        // 5. ANÁLISE DE LOJA (O Principal)
         else {
-            // Verifica se tem EG clicado ou no texto
             const matchEg = inputUsuario.match(/\d{4,6}-?\d?/);
             const termoBusca = textoLimpo.replace(/(analisa|ver|buscar|loja|gostaria|preciso|de|da|do|analise|sobre|me|fale|pode)\s/g, "").trim();
 
-            // Só baixa a planilha se realmente parecer uma busca (evita lentidão em 'oi')
             if (egClicado || matchEg || termoBusca.length > 2) {
                 const sheetResponse = await fetch(GOOGLE_SHEET_CSV_URL);
                 const csvText = await sheetResponse.text();
@@ -222,38 +195,22 @@ functions.http('analisar', async (req, res) => {
 
                 let lojaEncontrada = null;
 
-                // Estratégia A: Busca por EG exato
                 if (egClicado) {
                     lojaEncontrada = csvData.find(l => normalizar(l.eg) === normalizar(egClicado));
-                }
-                // Estratégia B: Busca por EG no texto
-                else if (matchEg) {
+                } else if (matchEg) {
                     lojaEncontrada = csvData.find(l => normalizar(l.eg).includes(matchEg[0]));
-                }
-                // Estratégia C: Busca por Nome (Fuzzy Search simples)
-                else if (termoBusca.length > 3) {
-                    // Filtra todas as lojas que parecem com o nome (busca mais ampla)
+                } else if (termoBusca.length > 3) {
                     const candidatos = csvData.filter(l => l.busca_full.includes(termoBusca));
-
-                    if (candidatos.length === 1) {
-                        lojaEncontrada = candidatos[0];
-                    } else if (candidatos.length > 1) {
-                        // Resposta inteligente se achar vários
-                        respostaFinal = `🔎 Encontrei **${candidatos.length} lojas** com termo "${termoBusca}".\n\nSeja mais específico ou digite o EG:\n\n`;
-                        respostaFinal += candidatos.slice(0, 5).map(l => `🔹 ${l.nome_fantasia} (EG: ${l.eg})`).join("\n");
-                        if (candidatos.length > 5) respostaFinal += `\n... (+${candidatos.length - 5} lojas)`;
+                    if (candidatos.length === 1) lojaEncontrada = candidatos[0];
+                    else if (candidatos.length > 1) {
+                        respostaFinal = `🔎 Achei **${candidatos.length} lojas** com termo "${termoBusca}".\n\nPrincipais:\n` + candidats.slice(0, 5).map(l => `🔹 ${l.nome_fantasia} (EG: ${l.eg})`).join("\n");
                     }
                 }
 
-                if (lojaEncontrada) {
-                    respostaFinal = gerarAnaliseProfunda(lojaEncontrada);
-                } else if (!respostaFinal) {
-                    // Se não achou loja e não caiu em nenhum outro if antes
-                    respostaFinal = `🧐 Não encontrei nenhuma loja com o termo **"${termoBusca}"** na base ativa.\n\nTente digitar o código EG ou verifique a ortografia.`;
-                }
+                if (lojaEncontrada) respostaFinal = gerarAnaliseProfunda(lojaEncontrada);
+                else if (!respostaFinal) respostaFinal = `🧐 Não encontrei nenhuma loja com o termo **"${termoBusca}"**. Tente o EG.`;
             } else {
-                // Caso tenha sobrado lixo ou texto curto
-                respostaFinal = `🤔 Não entendi. Você pode digitar o **Nome da Loja**, o **EG**, ou falar **"Menu"** para ver opções.`;
+                respostaFinal = `🤔 Não entendi. Digite o **Nome da Loja**, o **EG**, ou **"Menu"**.`;
             }
         }
 
@@ -261,6 +218,6 @@ functions.http('analisar', async (req, res) => {
 
     } catch (error) {
         console.error("Erro Fatal:", error);
-        res.status(200).json({ resposta: "⚠️ Estou atualizando minha base de dados. Tente novamente em alguns segundos." });
+        res.status(200).json({ resposta: "⚠️ Banco de dados atualizando. Tente em instantes." });
     }
 });
