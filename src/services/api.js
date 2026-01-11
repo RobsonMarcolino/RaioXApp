@@ -93,11 +93,7 @@ const parseCSVRobust = (text) => {
     return [];
 };
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-// Inicializa o SDK do Gemini com a chave fornecida
-const genAI = new GoogleGenerativeAI("AIzaSyBTZiUDC2INIspbdFm6R3dZX1A4ls7olSI");
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+// GoogleGenerativeAI is now handled server-side in api/chat.js to protect the key
 
 export const callGoogleAI = async (prompt) => {
     try {
