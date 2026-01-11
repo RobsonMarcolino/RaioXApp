@@ -140,23 +140,21 @@ functions.http('analisar', async (req, res) => {
         let { message, eg, prompt } = body;
 
         // --- ADAPTADOR DE LEGADO (Se o front mandar formato antigo) ---
-        if (!message && prompt) {
-            console.log("⚠️ Recebido formato antigo (prompt). Adaptando...");
-            // O formato antigo mandava tudo misturado no prompt.
-            // Vamos tentar usar o prompt como message provisoriamente.
-            // Ou tentar extrair o texto do usuário se possível.
-            const promptStr = String(prompt);
-            const matchUserMsg = promptStr.match(/PERGUNTA DO GN: "(.*)"/);
-            if (matchUserMsg && matchUserMsg[1]) {
-                message = matchUserMsg[1];
-                console.log("✅ Mensagem extraída do prompt legado:", message);
-            } else {
-                message = promptStr.substring(0, 100); // Falback simples
-            }
-            // Tenta achar EG no prompt antigo via Regex
-            const matchEg = promptStr.match(/DADOS DO PDV \(EG: (\w+)\)/);
-            if (matchEg && matchEg[1]) {
-                eg = matchEg[1];
+        if (prompt && !message) {
+            console.log("⚠️ MODO LEGADO DETECTADO: Usando prompt pronto do frontend.");
+            console.log("📝 Prompt recebido (início):", String(prompt).substring(0, 100));
+
+            // No modo legado, o frontend JÁ mandou os dados da planilha e as regras.
+            // Não precisamos processar planilha nem gerar contexto.
+            // Apenas repassamos para a IA.
+            try {
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+                return res.status(200).json({ resposta: text });
+            } catch (err) {
+                console.error("Erro no modo legado:", err);
+                return res.status(500).json({ error: "Erro na IA (Modo Legado): " + err.message });
             }
         }
 
