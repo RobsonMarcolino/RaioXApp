@@ -168,6 +168,21 @@ const ChatScreen = ({ navigation }) => {
                 <View style={[styles.insightBox, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
                     <Text style={[styles.insightText, { color: COLORS.textPrimary }]}>💡 {data.insight}</Text>
                 </View>
+
+                {/* Dados Extras (Atendimento/Visita) */}
+                {data.extra && (
+                    <View style={styles.extraInfoContainer}>
+                        <View style={styles.extraItem}>
+                            <Text style={styles.extraLabel}>📞 Atendimento</Text>
+                            <Text style={styles.extraValue}>{data.extra.atendimento}</Text>
+                        </View>
+                        <View style={styles.extraItem}>
+                            <Text style={styles.extraLabel}>🗓️ Visita Quinzenal</Text>
+                            <Text style={styles.extraValue}>{data.extra.visita_quinzenal}</Text>
+                        </View>
+                    </View>
+                )}
+
             </View>
         );
     };
@@ -551,6 +566,28 @@ const styles = StyleSheet.create({
     insightText: {
         fontSize: 13,
         fontStyle: 'italic'
+    },
+    extraInfoContainer: {
+        marginTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: '#F9F9F9',
+        borderRadius: 8,
+        padding: 8
+    },
+    extraItem: {
+        alignItems: 'center',
+        flex: 1
+    },
+    extraLabel: {
+        fontSize: 11,
+        color: '#888',
+        marginBottom: 2
+    },
+    extraValue: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#444'
     }
 });
 

@@ -64,7 +64,9 @@ const parseCSVRobust = (text) => {
                 else if (key === "corona") obj.corona = value;
                 else if (key === "stella") obj.stella = value;
                 else if (key === "ponto_extra") obj.ponto_extra = value;
-                else if (key === "gondola") obj.gondola = value;
+                else if (key.includes("gondola")) obj.gondola = value;
+                else if (key.includes("atendimento")) obj.atendimento = value;
+                else if (key.includes("visita") && key.includes("quinzenal")) obj.visita_quinzenal = value;
                 else obj[key] = value;
             });
             obj.busca_full = normalizar(`${obj.eg} ${obj.nome_fantasia} ${obj.rede} ${obj.gn}`);
@@ -128,7 +130,11 @@ const gerarAnaliseProfunda = (loja) => {
                 status: status // 'success', 'danger', 'neutral'
             },
             gaps: gaps, // Lista do que falta
-            insight: message
+            insight: message,
+            extra: {
+                atendimento: loja.atendimento || "N/A",
+                visita_quinzenal: loja.visita_quinzenal || "N/A"
+            }
         }
     };
 };
