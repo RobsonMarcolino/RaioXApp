@@ -1,9 +1,9 @@
 const functions = require('@google-cloud/functions-framework');
 
-// URL da Planilha
+// URL da Planilha (Dados Reais)
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfDeTnX48gWUAbXL_LcueTA-TMVcgqAe8VxBXjrlFnyGgQxZuZEs-gh7B1vDNYVn8efcxUJqB_QIx-/pub?output=csv";
 
-// --- 1. Parser de CSV Robust (Mantido) ---
+// --- 1. Parser de CSV Robust (Mantido e Estável) ---
 const parseCSVRobust = (text) => {
     const lines = [];
     const rawLines = text.trim().split("\n").filter((line) => line.trim());
@@ -40,10 +40,6 @@ const parseCSVRobust = (text) => {
                 else if (key.includes("sl_sc")) obj.sl_sc = value;
                 else if (key.includes("share_de_espaco_m_1") && !key.includes("vs")) obj.share_de_espaco_m1 = value;
                 else if (key.includes("share_de_espaco_m0")) obj.share_de_espaco_m0 = value;
-                else if (key.includes("share_de_espaco") && key.includes("vs") && key.includes("m_1")) obj.share_de_espaco_vs_m1 = value;
-                else if (key.includes("share_de_gelado_m_1") && !key.includes("vs")) obj.share_de_gelado_m1 = value;
-                else if (key.includes("share_de_gelado_m0")) obj.share_de_gelado_m0 = value;
-                else if (key.includes("share_de_gelado") && key.includes("vs") && key.includes("m_1")) obj.share_de_gelado_vs_m1 = value;
                 else obj[key] = value;
             });
             return obj;
@@ -54,121 +50,150 @@ const parseCSVRobust = (text) => {
 
 // --- 2. MOTOR DE REGRAS (A "Inteligência" Hardcoded) ---
 const generateExpertAnalysis = (loja) => {
-    if (!loja) return "❌ Loja não encontrada ou dados indisponíveis.";
+    if (!loja) return "❌ Poxa, procurei na minha base mas não encontrei essa loja. Tem certeza que o EG está correto?";
 
-    // Análise de Share Espaço
+    // Dados Numéricos
     const shareM1 = parseFloat(loja.share_de_espaco_m1?.replace(',', '.') || 0);
     const shareM0 = parseFloat(loja.share_de_espaco_m0?.replace(',', '.') || 0);
     const trendShare = shareM0 - shareM1;
+
+    // Lógica de "Humor" do Consultor
     let trendEmoji = "➖";
     let trendText = "Estável";
-    let shareInsight = "";
+    let advice = "";
 
     if (trendShare > 0.1) {
-        trendEmoji = "📈";
-        trendText = "Crescimento";
-        shareInsight = "Ótimo trabalho! Mantenha a execução para segurar esse ganho.";
+        trendEmoji = "�";
+        trendText = "Crescendo!";
+        advice = "Excelente trabalho na execução! O segredo agora é manutenção e blindagem.";
     } else if (trendShare < -0.1) {
-        trendEmoji = "📉";
-        trendText = "Queda";
-        shareInsight = "🚨 Atenção! Perdemos espaço. Verifique invasões da concorrência urgente.";
+        trendEmoji = "⚠️";
+        trendText = "Caindo";
+        advice = "Alerta vermelho! Precisamos recuperar esse share. Verifique invasões e rupturas.";
     } else {
-        shareInsight = "Share estável. Tente negociar um ponto extra para destravar crescimento.";
+        advice = "Estamos estagnados. Que tal negociar um ponto extra para virar o jogo?";
     }
 
-    // Análise Mix Premium
-    const mix = [];
-    if ((loja.corona || "").toUpperCase().includes("SIM") || (loja.corona || "").toUpperCase().includes("OK")) mix.push("Corona ✅"); else mix.push("Corona ❌");
-    if ((loja.spaten || "").toUpperCase().includes("SIM") || (loja.spaten || "").toUpperCase().includes("OK")) mix.push("Spaten ✅"); else mix.push("Spaten ❌");
-    if ((loja.stella || "").toUpperCase().includes("SIM") || (loja.stella || "").toUpperCase().includes("OK")) mix.push("Stella ✅"); else mix.push("Stella ❌");
+    // Mix (Simulação baseada em strings comuns)
+    const mixItems = [];
+    const checkMix = (val) => (val && (val.toUpperCase() === "SIM" || val.toUpperCase() === "OK"));
+    if (checkMix(loja.corona)) mixItems.push("Corona ✅"); else mixItems.push("Corona ❌");
+    if (checkMix(loja.spaten)) mixItems.push("Spaten ✅"); else mixItems.push("Spaten ❌");
 
-    // Análise Execução
-    const temPontoExtra = (loja.ponto_extra?.includes("SIM") || loja.ponto_extra?.includes("OK") || parseFloat(loja.ponto_extra) > 0);
-    const gapPontoExtra = temPontoExtra ? "Ponto Extra: ✅ Ativo" : "🎯 OPORTUNIDADE: Negocie um Ponto Extra!";
+    const temPontoExtra = (loja.ponto_extra || "").includes("SIM") || parseFloat(loja.ponto_extra) > 0;
 
-    // Montagem da Resposta
+    // Resposta Formatada
     return `
-📊 **ANÁLISE RAIO-X | ${loja.nome_fantasia}**
-*(EG: ${loja.eg} | Rede: ${loja.rede})*
+📊 **RAIO-X | ${loja.nome_fantasia}**
+*(Rede: ${loja.rede || 'Independente'})*
 
-🏆 **PERFORMANCE DE SHARE**
-• Mês Anterior: ${shareM1}%
-• Mês Atual: ${shareM0}%
-• Tendência: ${trendEmoji} **${trendText}** (${trendShare.toFixed(1)}%)
-💡 *Dica:* ${shareInsight}
+📈 **Desempenho de Categoria**
+• Share Anterior: ${shareM1}%
+• Share Atual: ${shareM0}%
+• Status: ${trendEmoji} **${trendText}**
+💡 *Insight:* ${advice}
 
-🍺 **MIX PREMIUM (Disponibilidade)**
-${mix.join("\n")}
+� **Execução no PDV**
+• Ponto Extra: ${temPontoExtra ? "✅ Conquistado!" : "❌ Oportunidade Aberta"}
+• Gôndola: ${loja.gondola || "Não informado"}
 
-🛠️ **EXECUÇÃO & VISIBILIDADE**
-• ${gapPontoExtra}
-• Gôndola: ${loja.gondola || "N/A"}
-• Base Foco: ${loja.base_foco || "N/A"}
+📋 **Mix Obrigatório**
+${mixItems.join("  |  ")}
 
-� **EQUIPE**
-• GN: ${loja.gn}
-• Coord: ${loja.coordenador}
-
-🚀 *Ação Sugerida:* ${temPontoExtra ? "Foco total em blindar a área dominada!" : "Prioridade máxima: Conquistar visibilidade extra!"}
+👥 **Responsáveis**
+GN: ${loja.gn} | Coord: ${loja.coordenador}
 `.trim();
 };
 
+// --- 3. CÉREBRO CONVERSACIONAL (NLP Simulada) ---
+const processConversation = (text) => {
+    const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-// --- 3. SERVIDOR (HTTP Function) ---
+    // Saudações
+    if (t.match(/^(oi|ola|eai|bom dia|boa tarde|boa noite|opa)/)) {
+        return `👋 Olá! Sou o Raio-X AI.\n\nEstou aqui para te dar **consultoria estratégica** sobre seus PDVs.\n\nPara começar, você pode:\n1️⃣ Digitar apenas o **EG** (ex: *79499-6*)\n2️⃣ Pedir uma análise (ex: *"Analisa a loja 79499-6"*)\n3️⃣ Perguntar sobre mim (*"Quem é você?"*)`;
+    }
+
+    // Identidade / Ajuda
+    if (t.includes("quem e voce") || t.includes("o que voce faz") || t.includes("ajuda") || t.includes("menu")) {
+        return `🤖 **Minhas Funcionalidades:**\n\nSou um assistente focado em Performance e Trade Marketing.\n\n📌 **O que eu analiso:**\n- Variação de Share (M0 vs M-1)\n- Gaps de Execução (Ponto Extra, Gôndola)\n- Presença do Mix Premium\n\n🎯 **Como usar:**\nBasta me enviar o código **EG** da loja e eu trago o dossiê completo!\n\n👨‍💻 *Criado pelo Robson.*`;
+    }
+
+    // Elogios/Agradecimentos
+    if (t.includes("obrigado") || t.includes("valeu") || t.includes("top")) {
+        return "👊 Tamo junto! Se precisar de mais alguma análise, é só chamar.";
+    }
+
+    return null; // Não entendeu, segue para tentar achar EG
+};
+
+// --- 4. SERVIDOR HTTP ---
 functions.http('analisar', async (req, res) => {
-    // Headers CORS
+    // CORS
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
-
     if (req.method === 'OPTIONS') { res.status(204).send(''); return; }
 
     try {
-        // Parse Body (Fallback)
         let body = req.body;
         if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { } }
         body = body || {};
 
-        // Extração Inteligente (Suporta formato novo 'message' ou legado 'prompt')
-        let { message, eg, prompt } = body;
+        let message = (body.message || body.prompt || "").toString().trim();
+        const explicitEg = (body.eg || "").toString().trim();
 
-        // Se vier prompt legado, tenta extrair EG dele
-        if (!eg && prompt) {
-            const matchEg = String(prompt).match(/EG: (\d+-\d)/);
-            if (matchEg) eg = matchEg[1];
-            // Se não achou no regex, tenta ver se a própria user message era um EG
-            const matchUserMsg = String(prompt).match(/PERGUNTA DO GN: "(\d+-\d)"/);
-            if (matchUserMsg) eg = matchUserMsg[1];
+        // 1. Tenta identificar conversas simples primeiro (Oi, Ajuda, etc)
+        // Mas só se NÃO tiver um EG explícito vindo do clique
+        if (!explicitEg) {
+            const reply = processConversation(message);
+            if (reply) {
+                return res.status(200).json({ resposta: reply });
+            }
         }
 
-        // Se a mensagem do usuário for apenas um EG, usa ele
-        if (message && /^\d+-\d$/.test(message.trim())) {
-            eg = message.trim();
+        // 2. Extração de EG (Hunter Logic) 🏹
+        let targetEg = explicitEg;
+        if (!targetEg) {
+            // Regex agressiva para achar códigos no meio do texto
+            const match = message.match(/\b\d{4,6}-?\d\b/);
+            if (match) targetEg = match[0];
+
+            // Backup: Se mandou "prompt" legado com EG lá dentro
+            if (!targetEg && body.prompt) {
+                const legacyMatch = String(body.prompt).match(/EG: (\d+-\d)/);
+                if (legacyMatch) targetEg = legacyMatch[1];
+            }
         }
 
-        console.log(`📡 Processando EG: [${eg}]`);
+        console.log(`📡 Mensagem: "${message}" | EG Alvo: ${targetEg || "Nenhum"}`);
 
-        if (!eg) {
+        // 3. Se não achou EG nem conversa, pede ajuda ao usuário
+        if (!targetEg) {
             return res.status(200).json({
-                resposta: "👋 Olá! Para começar, digite o **código EG** da loja que você quer analisar. (Ex: 12345-6)"
+                resposta: "🤔 Não entendi qual loja você quer analisar.\n\nPor favor, digite o código **EG** (ex: *12345-6*) ou fale *\"Ajuda\"* para ver o menu."
             });
         }
 
-        // 1. Baixar Dados
+        // 4. Se achou EG, vai buscar os dados!
         const sheetResponse = await fetch(GOOGLE_SHEET_CSV_URL);
+        if (!sheetResponse.ok) throw new Error("Erro ao acessar Base de Dados.");
         const csvText = await sheetResponse.text();
-        const csvData = parseCSVRobust(csvText);
+        const dados = parseCSVRobust(csvText);
 
-        // 2. Buscar Loja
-        const loja = csvData.find(l => l.eg?.trim() === eg?.trim());
+        // Limpeza do EG para busca (tira traço se precisar, ou mantém se a base tiver)
+        // A base parece usar com hífen, mas vamos garantir
+        const loja = dados.find(l => {
+            const baseEg = (l.eg || "").trim();
+            const searchEg = targetEg.trim();
+            return baseEg === searchEg || baseEg === searchEg.replace("-", "") || baseEg.replace("-", "") === searchEg;
+        });
 
-        // 3. Gerar Análise (Sem IA, apenas Lógica)
-        const respostaFinal = generateExpertAnalysis(loja);
-
-        res.status(200).json({ resposta: respostaFinal });
+        const analise = generateExpertAnalysis(loja);
+        res.status(200).json({ resposta: analise });
 
     } catch (error) {
-        console.error('🔥 Erro Interno:', error);
-        res.status(500).json({ error: `Erro Backend: ${error.message}` });
+        console.error('🔥 Erro:', error);
+        res.status(500).json({ error: "Erro interno: " + error.message });
     }
 });
