@@ -84,7 +84,7 @@ const gerarAnaliseProfunda = (loja) => {
     const shareM1 = toNum(loja.share_de_espaco_m1);
     const delta = shareM0 - shareM1;
 
-    // Diagnóstico de Itens Críticos
+    // Diagnóstico de Itens
     const checkStatus = (val) => {
         const v = (val || "").toUpperCase();
         return v === "SIM" || v === "OK" || v === "S";
@@ -96,39 +96,41 @@ const gerarAnaliseProfunda = (loja) => {
     if (!checkStatus(loja.stella)) gaps.push("Stella");
     if (!checkStatus(loja.ponto_extra)) gaps.push("Ponto Extra");
 
-    // Variação da intro para parecer humano
-    const intros = [
-        `🔎 **Análise Solicitada:**`,
-        `📊 **Dossiê do Estabelecimento:**`,
-        `📑 **Relatório Gerencial:**`
-    ];
+    // Lógica de Sentimento
+    let status = "neutral";
+    let title = "Estável";
+    let message = "Manter execução.";
 
-    let txt = `${sortear(intros)} **${loja.nome_fantasia}**\n`;
-    txt += `🆔 EG: ${loja.eg} | Rede: ${loja.rede || "Não identificada"}\n`;
-    txt += `👤 Gestão: ${loja.gn || "N/A"}\n\n`;
-
-    // Análise de Share com "Sentimento"
-    txt += `📉 **Dinâmica de Share:**\n`;
     if (delta > 0.5) {
-        txt += `🚀 **Excelente!** Crescemos **+${delta.toFixed(1)}%** (De ${shareM1}% para ${shareM0}%).\n`;
-        txt += `💡 *Recomendação:* O trabalho de execução está surtindo efeito. Blinde esse espaço!\n`;
+        status = "success";
+        title = "Crescimento";
+        message = "Ótimo trabalho! Blinde o espaço conquistado.";
     } else if (delta < -0.5) {
-        txt += `⚠️ **Alerta:** Queda de **${delta.toFixed(1)}%** (De ${shareM1}% para ${shareM0}%).\n`;
-        txt += `🔥 *Ação Imediata:* Identificar se houve invasão da concorrência ou perda de módulos.\n`;
+        status = "danger";
+        title = "Queda";
+        message = "Alerta! Recupere espaço ou verifique invasões.";
     } else {
-        txt += `➖ **Estabilidade:** Mantivemos ${shareM0}%. (M-1: ${shareM1}%).\n`;
-        txt += `💡 *Insight:* Para crescer, precisamos de um Ponto Extra agressivo.\n`;
+        message = "Precisamos de Ponto Extra para voltar a crescer.";
     }
 
-    txt += `\n📋 **Checklist de Execução (Score 5):**\n`;
-    if (gaps.length === 0) {
-        txt += `✅ **Loja Perfeita!** Mix Premium e Pontos Extras positivados.\n`;
-    } else {
-        txt += `❌ **GAPS Encontrados:** Faltam ${gaps.join(" + ")}.\n`;
-        txt += `Oportunidade de aumentar o faturamento introduzindo esses itens.\n`;
-    }
-
-    return txt;
+    // Retorna OBJETO ESTRUTURADO para o Frontend montar o Card
+    return {
+        type: "analysis_card",
+        text: `📊 Análise de ${loja.nome_fantasia} gerada com sucesso.`, // Fallback de texto
+        card: {
+            title: loja.nome_fantasia,
+            subtitle: `EG: ${loja.eg} | Rede: ${loja.rede || "N/A"}`,
+            gn: loja.gn,
+            share: {
+                current: shareM0,
+                previous: shareM1,
+                delta: delta.toFixed(1),
+                status: status // 'success', 'danger', 'neutral'
+            },
+            gaps: gaps, // Lista do que falta
+            insight: message
+        }
+    };
 };
 
 // --- 3. BASE DE PRODUTOS (Apenas Detalhes Úteis) ---
@@ -203,12 +205,20 @@ functions.http('analisar', async (req, res) => {
                     const candidatos = csvData.filter(l => l.busca_full.includes(termoBusca));
                     if (candidatos.length === 1) lojaEncontrada = candidatos[0];
                     else if (candidatos.length > 1) {
-                        respostaFinal = `🔎 Achei **${candidatos.length} lojas** com termo "${termoBusca}".\n\nPrincipais:\n` + candidats.slice(0, 5).map(l => `🔹 ${l.nome_fantasia} (EG: ${l.eg})`).join("\n");
+                        respostaFinal = `🔎 Achei **${candidatos.length} lojas** com termo "${termoBusca}".\n\nPrincipais:\n` + candidatos.slice(0, 5).map(l => `🔹 ${l.nome_fantasia} (EG: ${l.eg})`).join("\n");
                     }
                 }
 
-                if (lojaEncontrada) respostaFinal = gerarAnaliseProfunda(lojaEncontrada);
-                else if (!respostaFinal) respostaFinal = `🧐 Não encontrei nenhuma loja com o termo **"${termoBusca}"**. Tente o EG.`;
+                if (lojaEncontrada) {
+                    const analise = gerarAnaliseProfunda(lojaEncontrada);
+                    // Retorna o objeto completo para o frontend processar
+                    return res.status(200).json({
+                        resposta: analise.text, // Texto fallback
+                        card: analise.card      // Dados ricos
+                    });
+                } else if (!respostaFinal) { // Only set if no multiple candidates message was set
+                    respostaFinal = `🧐 Não encontrei nenhuma loja com o termo **"${termoBusca}"**. Tente o EG.`;
+                }
             } else {
                 respostaFinal = `🤔 Não entendi. Digite o **Nome da Loja**, o **EG**, ou **"Menu"**.`;
             }
