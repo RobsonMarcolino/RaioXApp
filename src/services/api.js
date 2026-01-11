@@ -101,10 +101,11 @@ export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
     console.log("Message:", mensagemTexto);
     console.log("EG:", codigoLoja);
 
-    if (!mensagemTexto || !codigoLoja) {
-        console.error("⛔ PARE! Faltou mensagem ou EG.");
-        return "❌ Erro: O código da loja não foi carregado.";
+    if (!mensagemTexto) {
+        console.warn("⚠️ Tentativa de envio vazio.");
+        return "❌ Digite alguma coisa...";
     }
+    // Removida a trava de 'codigoLoja' para permitir conversas livres (Oi, Menu, etc)
 
     try {
         const response = await fetch(API_URL, {
