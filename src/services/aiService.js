@@ -69,7 +69,7 @@ const parseCSVRobust = (text) => {
                 // Specific mappings if normalization isn't enough or for aliases
                 if (key === "eg" || key === "codigo" || key === "code") obj.eg = value;
                 else if (key.includes("nome")) obj.nome_fantasia = value;
-                else if (key === "rede") obj.rede = value;
+                else if (key.includes("rede")) obj.rede = value;
                 else if (key === "coordenador") obj.coordenador = value;
                 else if (key === "gn") obj.gn = value;
                 else if (key.includes("sl_sc")) obj.sl_sc = value;
