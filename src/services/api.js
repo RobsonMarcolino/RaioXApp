@@ -141,52 +141,64 @@ export const callGoogleAI = async (prompt) => {
 };
 
 export const generateAIContext = (message, csvData, estabelecimentoEncontrado = null) => {
-    // Logic to generate the prompt context, copied/adapted from original code
     let estabelecimentoInfo = "NENHUM";
 
     if (estabelecimentoEncontrado) {
+        // Calcular tendências simples (apenas para facilitar a leitura da IA)
+        const shareM1 = parseFloat(estabelecimentoEncontrado.share_espaco_m1) || 0;
+        const shareM0 = parseFloat(estabelecimentoEncontrado.share_espaco_m0) || 0;
+        const trend = shareM0 - shareM1;
+        const trendSymbol = trend > 0 ? "📈 Crescimento" : trend < 0 ? "📉 Queda" : "➖ Estável";
+
         estabelecimentoInfo = `
-DADOS REAIS DO ESTABELECIMENTO ${estabelecimentoEncontrado.eg}:
-- Nome: ${estabelecimentoEncontrado.nome_fantasia || "Não informado"}
-- Rede: ${estabelecimentoEncontrado.rede || "Não informado"}
-- Coordenador: ${estabelecimentoEncontrado.coordenador || "Não informado"}
-- GN: ${estabelecimentoEncontrado.gn || "Não informado"}
-- SL/SC: ${estabelecimentoEncontrado.sl_sc || "Não informado"}
-- Share de Espaço M-1: ${estabelecimentoEncontrado.share_espaco_m1 || "Não informado"}
-- Share de Espaço M0: ${estabelecimentoEncontrado.share_espaco_m0 || "Não informado"}
-- Share de Espaço vs M-1: ${estabelecimentoEncontrado.share_espaco_vs_m1 || "Não informado"}
-- Share de Gelado M-1: ${estabelecimentoEncontrado.share_gelado_m1 || "Não informado"}
-- Share de Gelado M0: ${estabelecimentoEncontrado.share_gelado_m0 || "Não informado"}
-- Share de Gelado vs M-1: ${estabelecimentoEncontrado.share_gelado_vs_m1 || "Não informado"}
-- Gôndola: ${estabelecimentoEncontrado.gondola || "Não informado"}
-- Ponto Extra: ${estabelecimentoEncontrado.ponto_extra || "Não informado"}
-- Base Foco: ${estabelecimentoEncontrado.base_foco || "Não informado"}
-- Corona: ${estabelecimentoEncontrado.corona || "Não informado"}
-- Spaten: ${estabelecimentoEncontrado.spaten || "Não informado"}
-- Stella: ${estabelecimentoEncontrado.stella || "Não informado"}
-- COB HDW: ${estabelecimentoEncontrado.cob_hdw || "Não informado"}
-- Atendimento: ${estabelecimentoEncontrado.atendimento || "Não informado"}
-- Visita Quinzenal: ${estabelecimentoEncontrado.visita_quinzenal || "Não informado"}
+DADOS ESTRATÉGICOS DO PDV (EG: ${estabelecimentoEncontrado.eg}):
+- Nome: ${estabelecimentoEncontrado.nome_fantasia || "N/A"} (${estabelecimentoEncontrado.rede || "Rede N/A"})
+- Segmentação: ${estabelecimentoEncontrado.sl_sc || "N/A"} | GN: ${estabelecimentoEncontrado.gn || "N/A"}
+
+PERFORMANCE DE SHARE (ESPAÇO):
+- Mês Anterior (M-1): ${estabelecimentoEncontrado.share_espaco_m1 || "0"}%
+- Mês Atual (M0): ${estabelecimentoEncontrado.share_espaco_m0 || "0"}%
+- Tendência: ${trendSymbol} (${trend.toFixed(1)}%)
+- Share Gelado (M0): ${estabelecimentoEncontrado.share_gelado_m0 || "0"}%
+
+EXECUÇÃO E VISIBILIDADE (OFF TRADE):
+- Ponto Extra: ${estabelecimentoEncontrado.ponto_extra || "Não"}
+- Gôndola: ${estabelecimentoEncontrado.gondola || "Não"}
+- Base Foco: ${estabelecimentoEncontrado.base_foco || "Não"}
+
+MIX PREMIUM (PRESENÇA):
+- Corona: ${estabelecimentoEncontrado.corona || "Não"}
+- Spaten: ${estabelecimentoEncontrado.spaten || "Não"}
+- Stella: ${estabelecimentoEncontrado.stella || "Não"}
+
+FREQÜÊNCIA:
+- Visita Quinzenal: ${estabelecimentoEncontrado.visita_quinzenal || "N/A"}
+- Atendimento: ${estabelecimentoEncontrado.atendimento || "N/A"}
 `.trim();
     }
 
-    return `Você é um assistente especializado na Base de Lojas da Score 5 da DIRETA MG.
-CONTEXTO:
-- Sistema de análise de Lojas da DIRETA MG
-- Dados disponíveis: ${csvData.length} estabelecimentos
+    return `
+ATUE COMO: Consultor Estratégico de Trade Marketing (Foco em Off Trade) da DIRETA MG.
+SEU CLIENTE: Você está falando com um GN (Gerente de Negócio).
+SUA MISSÃO: Fornecer insights de execução e estratégia para alavancar o PDV. Não seja operacional, seja tático.
 
-REGRAS CRÍTICAS:
-1. NUNCA INVENTE DADOS FICTÍCIOS
-2. Use APENAS os dados reais fornecidos
-3. Se o codigo EG não for encontrado, informe claramente
-4. Você é fiel a AMBEV e não pode falar sobre outras empresas.
-5. Se te perguntarem quem criou você, responda que foi o Engenheiro de software Robson.
-6. So informa os dados que estão aqui quando for perguntado sobre eles, não expõe tudo no chat de uma vez.
+REGRAS DE OURO (MANDATORY):
+1. **NUNCA fale de valores monetários (R$).** O foco é Share, Visibilidade e Execução.
+2. **NUNCA chame o usuário de "vendedor".** Ele pode ser o SN (Supervisor de Negócio), GN (Gerente de Negócio), SL ( supervisor de Loja) ou Diretor do off
+3. **NÃO repita dados que ele já vê na tela.** Use os dados para gerar *conclusões*.
+   - Exemplo Ruim: "O Share é 30%."
+   - Exemplo Bom: "Notei uma queda de 5% no Share. Precisamos blindar a gôndola."
+4. **Foco em GAPS:** Identifique o que FALTA (Sem ponto extra? Sem Spaten?).
+5. Seja direto, profissional e use emojis estratégicos (🎯, 📉, 🚀).
 
-DADOS DA LOJA (EG) SOLICITADO:
+DADOS DO PDV EM ANÁLISE:
 ${estabelecimentoInfo}
 
-MENSAGEM DO USUÁRIO: "${message}"
+CONTEXTO GERAL:
+- Total de lojas na base: ${csvData.length}
 
-Responda de forma natural, organizada separando as principais informações e visual colocando emojis para ilustrar.`;
+PERGUNTA DO GN: "${message}"
+
+Responda com uma análise de **Diagnóstico** (o que está acontecendo) e **Ação Recomendada** (o que o GN deve orientar o time a fazer).
+`.trim();
 };
