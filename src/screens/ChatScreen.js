@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Keyboard
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, User, Bot } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { loadSheetData, callGoogleAI, generateAIContext } from '../services/api';
+import { loadSheetData, callGoogleAI } from '../services/api';
 
 const ChatScreen = ({ navigation }) => {
     const [messages, setMessages] = useState([]);
@@ -80,8 +80,11 @@ const ChatScreen = ({ navigation }) => {
                 }
             }
 
-            const context = generateAIContext(userMessage.text, csvData, estabelecimento);
-            const aiResponse = await callGoogleAI(context);
+            // O Backend agora gera o contexto. Nós mandamos apenas a mensagem e o EG.
+            // Se estabelecimento for null, enviamos null (ou seja, perguntas genéricas).
+            const egCode = estabelecimento ? estabelecimento.eg : null;
+
+            const aiResponse = await callGoogleAI(userMessage.text, egCode);
 
             const botMessage = {
                 id: Date.now().toString() + '_bot',
