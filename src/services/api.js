@@ -132,7 +132,7 @@ export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
         }
 
         const data = await response.json();
-        return data.resposta;
+        return data; // Retorna objeto completo { resposta, card }
 
     } catch (error) {
         console.error("Erro fatal:", error);

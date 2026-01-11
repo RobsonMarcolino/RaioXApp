@@ -88,7 +88,8 @@ const ChatScreen = ({ navigation }) => {
 
             const botMessage = {
                 id: Date.now().toString() + '_bot',
-                text: aiResponse,
+                text: aiResponse.resposta || "Sem resposta.",
+                card: aiResponse.card || null, // Armazena dados do card se houver
                 sender: 'bot',
                 timestamp: new Date(),
             };
@@ -107,6 +108,68 @@ const ChatScreen = ({ navigation }) => {
             setIsLoading(false);
             setIsTyping(false);
         }
+    };
+
+    // Componente Visual do Card
+    const AnalysisCard = ({ data }) => {
+        if (!data) return null;
+
+        const isSuccess = data.share.status === 'success';
+        const isDanger = data.share.status === 'danger';
+        const statusColor = isSuccess ? COLORS.success : (isDanger ? COLORS.error : COLORS.warning);
+        const statusIcon = isSuccess ? "🚀" : (isDanger ? "📉" : "➖");
+
+        return (
+            <View style={styles.cardContainer}>
+                {/* Cabeçalho do Card */}
+                <View style={[styles.cardHeader, { borderLeftColor: statusColor }]}>
+                    <Text style={styles.cardTitle}>{data.title}</Text>
+                    <Text style={styles.cardSubtitle}>{data.subtitle}</Text>
+                </View>
+
+                {/* Seção de Share */}
+                <View style={styles.cardSection}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View>
+                            <Text style={styles.cardLabel}>Share Atual</Text>
+                            <Text style={[styles.cardBigNumber, { color: statusColor }]}>{data.share.current}%</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={styles.cardLabel}>Anterior</Text>
+                            <Text style={styles.cardValue}>{data.share.previous}%</Text>
+                        </View>
+                    </View>
+
+                    {/* Barra de Progresso Visual */}
+                    <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${Math.min(data.share.current, 100)}%`, backgroundColor: statusColor }]} />
+                    </View>
+                    <Text style={[styles.cardDelta, { color: statusColor }]}>
+                        {statusIcon} {isSuccess ? "+" : ""}{data.share.delta}% ({data.share.status === 'neutral' ? 'Estável' : (isSuccess ? 'Crescimento' : 'Queda')})
+                    </Text>
+                </View>
+
+                {/* Checklist de Itens */}
+                <View style={styles.cardSection}>
+                    <Text style={styles.cardSectionTitle}>📋 Gaps de Execução:</Text>
+                    {data.gaps.length === 0 ? (
+                        <Text style={styles.successText}>✅ Loja Perfeita! Nenhum gap.</Text>
+                    ) : (
+                        data.gaps.map((gap, i) => (
+                            <View key={i} style={styles.gapItem}>
+                                <Text style={{ color: COLORS.error, fontWeight: 'bold' }}>❌ Faltando:</Text>
+                                <Text style={{ marginLeft: 5, color: COLORS.textSecondary }}>{gap}</Text>
+                            </View>
+                        ))
+                    )}
+                </View>
+
+                {/* Insight do Especialista */}
+                <View style={[styles.insightBox, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
+                    <Text style={[styles.insightText, { color: COLORS.textPrimary }]}>💡 {data.insight}</Text>
+                </View>
+            </View>
+        );
     };
 
     const renderFormattedText = (text, isUser) => {
@@ -162,12 +225,20 @@ const ChatScreen = ({ navigation }) => {
                         <Bot size={20} color={COLORS.primary} />
                     </View>
                 )}
-                <View style={[
-                    styles.messageBubble,
-                    isUser ? styles.userBubble : styles.botBubble
-                ]}>
-                    {renderFormattedText(item.text, isUser)}
+                <View style={{ maxWidth: '85%' }}>
+                    {/* Se tiver Card, mostra O Card. Se não, mostra o balão de texto normal */}
+                    {item.card ? (
+                        <AnalysisCard data={item.card} />
+                    ) : (
+                        <View style={[
+                            styles.messageBubble,
+                            isUser ? styles.userBubble : styles.botBubble
+                        ]}>
+                            {renderFormattedText(item.text, isUser)}
+                        </View>
+                    )}
                 </View>
+
                 {isUser && (
                     <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
                         <User size={20} color="#1A1A1A" />
@@ -179,7 +250,6 @@ const ChatScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
             {/* Header */}
             <ImageBackground
                 source={require('../../assets/header.png')}
@@ -328,7 +398,7 @@ const styles = StyleSheet.create({
         ...SHADOWS.sm,
     },
     messageBubble: {
-        maxWidth: '75%',
+        maxWidth: '100%',
         padding: SPACING.md,
         borderRadius: RADIUS.xl,
         ...SHADOWS.sm,
@@ -395,6 +465,94 @@ const styles = StyleSheet.create({
     sendButtonDisabled: {
         backgroundColor: COLORS.gray400,
     },
+
+    // --- ESTILOS DO NOVO CARD ---
+    cardContainer: {
+        backgroundColor: '#FFF',
+        borderRadius: 12,
+        padding: 16,
+        marginVertical: 4,
+        width: 300, // Largura fixa para ficar bonito
+        ...SHADOWS.md,
+        borderWidth: 1,
+        borderColor: '#EEE'
+    },
+    cardHeader: {
+        borderLeftWidth: 4,
+        paddingLeft: 10,
+        marginBottom: 12
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333'
+    },
+    cardSubtitle: {
+        fontSize: 12,
+        color: '#666'
+    },
+    cardSection: {
+        marginBottom: 12,
+        paddingVertical: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#F5F5F5'
+    },
+    cardLabel: {
+        fontSize: 12,
+        color: '#888',
+        textTransform: 'uppercase'
+    },
+    cardBigNumber: {
+        fontSize: 28,
+        fontWeight: 'bold'
+    },
+    cardValue: {
+        fontSize: 14,
+        color: '#555',
+        fontWeight: '600'
+    },
+    cardDelta: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginTop: 4
+    },
+    progressBarBg: {
+        height: 6,
+        backgroundColor: '#E0E0E0',
+        borderRadius: 3,
+        marginVertical: 6
+    },
+    progressBarFill: {
+        height: '100%',
+        borderRadius: 3
+    },
+    cardSectionTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 6
+    },
+    gapItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 2
+    },
+    successText: {
+        color: COLORS.success,
+        fontWeight: 'bold',
+        marginTop: 4
+    },
+    insightBox: {
+        padding: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        marginTop: 4
+    },
+    insightText: {
+        fontSize: 13,
+        fontStyle: 'italic'
+    }
 });
 
 export default ChatScreen;
+```
