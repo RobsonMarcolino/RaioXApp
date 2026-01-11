@@ -137,7 +137,28 @@ functions.http('analisar', async (req, res) => {
         // Garante objeto nulo safe
         body = body || {};
 
-        const { message, eg } = body;
+        let { message, eg, prompt } = body;
+
+        // --- ADAPTADOR DE LEGADO (Se o front mandar formato antigo) ---
+        if (!message && prompt) {
+            console.log("⚠️ Recebido formato antigo (prompt). Adaptando...");
+            // O formato antigo mandava tudo misturado no prompt.
+            // Vamos tentar usar o prompt como message provisoriamente.
+            // Ou tentar extrair o texto do usuário se possível.
+            const promptStr = String(prompt);
+            const matchUserMsg = promptStr.match(/PERGUNTA DO GN: "(.*)"/);
+            if (matchUserMsg && matchUserMsg[1]) {
+                message = matchUserMsg[1];
+                console.log("✅ Mensagem extraída do prompt legado:", message);
+            } else {
+                message = promptStr.substring(0, 100); // Falback simples
+            }
+            // Tenta achar EG no prompt antigo via Regex
+            const matchEg = promptStr.match(/DADOS DO PDV \(EG: (\w+)\)/);
+            if (matchEg && matchEg[1]) {
+                eg = matchEg[1];
+            }
+        }
 
         console.log(`📡 DADOS FINAIS: EG [${eg}] - Msg [${message}]`);
 
