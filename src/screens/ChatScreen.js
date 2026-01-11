@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Keyboard
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, User, Bot } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { loadSheetData, callGoogleAI } from '../services/api';
+import { loadSheetData, callGoogleAI } from '../services/aiService';
 
 const ChatScreen = ({ navigation }) => {
     const [messages, setMessages] = useState([]);

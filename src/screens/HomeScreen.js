@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions
 import { LinearGradient } from 'expo-linear-gradient';
 import { MessageSquare, Store, BookOpen, TrendingUp, Bell, User, Bot, ExternalLink, ChevronRight, BarChart2, FileText, AlertTriangle } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { loadSheetData } from '../services/api';
+import { loadSheetData } from '../services/aiService';
 
 const { width: windowWidth } = Dimensions.get('window');
 // Clamp width on web to match MobileContainer's max width (approx 420)

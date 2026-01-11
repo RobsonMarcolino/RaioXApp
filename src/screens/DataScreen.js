@@ -4,8 +4,8 @@ import { PieChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { loadSheetData } from '../services/api';
-import { Search, X, Store, MapPin, TrendingUp, LayoutGrid, Award, ArrowLeft, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Search, Filter } from 'lucide-react-native';
+import { loadSheetData } from '../services/aiService';
 import SkeletonCard from '../components/SkeletonCard';
 
 // Bees Brand Colors
