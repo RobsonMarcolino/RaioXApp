@@ -5,8 +5,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // Certifique-se de que a variável de ambiente GEMINI_API_KEY esteja configurada no Google Cloud Run
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Modelo atualizado para 1.5-flash (Mais rápido e eficiente)
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Modelo atualizado para 1.5-flash (Versão específica 001 para evitar erro 404)
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
 
 // URL da Planilha (escondida no backend)
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTfDeTnX48gWUAbXL_LcueTA-TMVcgqAe8VxBXjrlFnyGgQxZuZEs-gh7B1vDNYVn8efcxUJqB_QIx-/pub?output=csv";
