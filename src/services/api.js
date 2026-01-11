@@ -93,31 +93,40 @@ const parseCSVRobust = (text) => {
 };
 
 // ATUALIZAÇÃO NO FRONT-END
-export const callGoogleAI = async (mensagemDoUsuario, codigoEG) => { // <--- Recebe EG agora
-    // URL do seu Cloud Run que apareceu no log
-    const API_URL = "https://analisareg2-770471336573.us-central1.run.app";
+export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
+    const API_URL = "https://analisareg2-770471336573.us-central1.run.app"; 
+
+    // LOG PARA VOCÊ VER NO NAVEGADOR
+    console.log("🚀 TENTANDO ENVIAR PARA O BACKEND:");
+    console.log("Message:", mensagemTexto);
+    console.log("EG:", codigoLoja);
+
+    if (!mensagemTexto || !codigoLoja) {
+        console.error("⛔ PARE! Faltou mensagem ou EG.");
+        return "❌ Erro: O código da loja não foi carregado.";
+    }
 
     try {
         const response = await fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                // O Backend novo espera EXATAMENTE estes nomes:
-                message: mensagemDoUsuario,
-                eg: codigoEG
+                message: mensagemTexto,
+                eg: codigoLoja
             }),
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro do Servidor: ${errorText}`);
+            const erroServer = await response.text();
+            console.error("🔥 Erro voltando do servidor:", erroServer);
+            throw new Error(erroServer);
         }
 
         const data = await response.json();
         return data.resposta;
 
     } catch (error) {
-        console.error("Erro:", error);
-        return "❌ Erro ao conectar com a inteligência.";
+        console.error("Erro fatal:", error);
+        return "❌ Erro ao conectar.";
     }
 };
