@@ -94,7 +94,7 @@ const parseCSVRobust = (text) => {
 
 // ATUALIZAÇÃO NO FRONT-END
 export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
-    const API_URL = "https://analisareg2-770471336573.us-central1.run.app"; 
+    const API_URL = "https://analisareg2-770471336573.us-central1.run.app";
 
     // LOG PARA VOCÊ VER NO NAVEGADOR
     console.log("🚀 TENTANDO ENVIAR PARA O BACKEND:");
@@ -119,7 +119,15 @@ export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
         if (!response.ok) {
             const erroServer = await response.text();
             console.error("🔥 Erro voltando do servidor:", erroServer);
-            throw new Error(erroServer);
+
+            // Tenta decodificar se for JSON para ficar bonito
+            try {
+                const erroJson = JSON.parse(erroServer);
+                throw new Error(erroJson.error || erroServer);
+            } catch (e) {
+                // Se não for JSON (ex: HTML do Google), mostra os primeiros 100 caracteres
+                throw new Error(`Erro ${response.status}: ${erroServer.substring(0, 100)}...`);
+            }
         }
 
         const data = await response.json();
@@ -127,6 +135,6 @@ export const callGoogleAI = async (mensagemTexto, codigoLoja) => {
 
     } catch (error) {
         console.error("Erro fatal:", error);
-        return "❌ Erro ao conectar.";
+        return `❌ Erro no Backend: ${error.message}`;
     }
 };
