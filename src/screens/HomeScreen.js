@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions, Linking, FlatList, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Linking, FlatList, Platform, Animated, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MessageSquare, Store, BookOpen, TrendingUp, Bell, User, Bot, ExternalLink, ChevronRight, BarChart2, FileText, AlertTriangle } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData } from '../services/aiService';
 import { useChat } from '../context/ChatContext';
-
-const { width: windowWidth } = Dimensions.get('window');
-// Clamp width on web to match MobileContainer's max width (approx 420)
-const width = Platform.OS === 'web' ? Math.min(windowWidth, 420) : windowWidth;
-const CARD_WIDTH = width - (SPACING.lg * 2); // Full width minus padding
 
 const RAW_LINKS = [
     {
@@ -38,16 +33,21 @@ const RAW_LINKS = [
     }
 ];
 
-// Create a large dataset for "infinite" scroll illusion
-const INFINITE_LINKS = Array(100).fill(RAW_LINKS).flat().map((item, index) => ({ ...item, uniqueId: `${item.id}_${index}` }));
-const INITIAL_INDEX = 150; // Start in the middle (multiple of 3)
-
 const HomeScreen = ({ navigation }) => {
     const { openChat } = useChat();
     const [storeCount, setStoreCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
-    const [currentIndex, setCurrentIndex] = useState(INITIAL_INDEX);
-    const [activeDotIndex, setActiveDotIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Responsive Width Calculation
+    const { width: windowWidth } = useWindowDimensions();
+    // Clamp width on web to match MobileContainer's max width (approx 400-420)
+    // MobileContainer uses 400 max width usually. Let's aim for that alignment.
+    const containerWidth = Platform.OS === 'web' ? Math.min(windowWidth, 400) : windowWidth;
+
+    // Adjust Card Width to be full width minus padding
+    const CONTENT_PADDING = SPACING.lg; // 24
+    const CARD_WIDTH = containerWidth - (CONTENT_PADDING * 2);
 
     const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -64,34 +64,27 @@ const HomeScreen = ({ navigation }) => {
         extrapolate: 'clamp',
     });
 
-    // Sync active dot with current index
+    const flatListRef = useRef(null);
+
     useEffect(() => {
-        const rawIndex = currentIndex % RAW_LINKS.length;
-        setActiveDotIndex(rawIndex);
-    }, [currentIndex]);
+        loadData();
+    }, []);
 
     // Auto-scroll logic
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentIndex(prev => {
-                const nextIndex = prev + 1;
-                // Scroll to the next item
+            setCurrentIndex(prevIndex => {
+                const nextIndex = prevIndex >= RAW_LINKS.length - 1 ? 0 : prevIndex + 1;
                 flatListRef.current?.scrollToOffset({
                     offset: nextIndex * (CARD_WIDTH + SPACING.md),
                     animated: true
                 });
                 return nextIndex;
             });
-        }, 4000); // 4 seconds interval
+        }, 4000);
 
         return () => clearInterval(interval);
-    }, []);
-
-    const flatListRef = useRef(null);
-
-    useEffect(() => {
-        loadData();
-    }, []);
+    }, [CARD_WIDTH]);
 
     const loadData = async () => {
         try {
@@ -144,7 +137,7 @@ const HomeScreen = ({ navigation }) => {
 
     const renderBannerItem = ({ item }) => (
         <TouchableOpacity
-            style={styles.bannerCard}
+            style={[styles.bannerCard, { width: CARD_WIDTH }]}
             onPress={() => openLink(item.url)}
             activeOpacity={0.9}
         >
@@ -272,28 +265,22 @@ const HomeScreen = ({ navigation }) => {
                 <View style={styles.carouselContainer}>
                     <FlatList
                         ref={flatListRef}
-                        data={INFINITE_LINKS}
+                        data={RAW_LINKS}
                         renderItem={renderBannerItem}
-                        keyExtractor={(item) => item.uniqueId}
+                        keyExtractor={(item) => item.id}
                         horizontal
-                        pagingEnabled={false} // Disable paging to allow custom snap
                         showsHorizontalScrollIndicator={false}
-                        getItemLayout={(data, index) => ({
-                            length: CARD_WIDTH + SPACING.md,
-                            offset: (CARD_WIDTH + SPACING.md) * index,
-                            index,
-                        })}
-                        initialScrollIndex={INITIAL_INDEX}
-                        onScroll={(e) => {
-                            const index = Math.round(e.nativeEvent.contentOffset.x / (CARD_WIDTH + SPACING.md));
-                            if (index !== currentIndex) {
-                                setCurrentIndex(index);
-                            }
-                        }}
                         snapToInterval={CARD_WIDTH + SPACING.md}
                         decelerationRate="fast"
-                        contentContainerStyle={{ paddingHorizontal: SPACING.lg }}
+                        snapToAlignment="start"
+                        contentContainerStyle={{
+                            paddingHorizontal: SPACING.lg,
+                        }}
                         ItemSeparatorComponent={() => <View style={{ width: SPACING.md }} />}
+                        onMomentumScrollEnd={(event) => {
+                            const index = Math.round(event.nativeEvent.contentOffset.x / (CARD_WIDTH + SPACING.md));
+                            setCurrentIndex(index);
+                        }}
                     />
                     {/* Pagination Dots */}
                     <View style={styles.paginationContainer}>
@@ -302,7 +289,7 @@ const HomeScreen = ({ navigation }) => {
                                 key={index}
                                 style={[
                                     styles.paginationDot,
-                                    index === activeDotIndex && styles.paginationDotActive
+                                    index === currentIndex && styles.paginationDotActive
                                 ]}
                             />
                         ))}
@@ -399,7 +386,6 @@ const styles = StyleSheet.create({
         marginHorizontal: -SPACING.lg, // Negate parent padding to allow full-width swipe
     },
     bannerCard: {
-        width: CARD_WIDTH,
         height: 100, // Reduced height
         borderRadius: RADIUS.lg,
         ...SHADOWS.sm,
@@ -544,6 +530,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: SPACING.xl,
+        gap: SPACING.md, // Ensure gap between grid items
     },
     card: {
         borderRadius: RADIUS.lg,
@@ -554,7 +541,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.1)',
     },
     cardSmall: {
-        width: '48%', // Use percentage for responsiveness
+        flex: 1, // Use flex 1 to fill available space equally
         height: 140,
     },
     cardLarge: {

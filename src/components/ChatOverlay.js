@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0, // Fill screen
+        bottom: 90, // Raise bottom to reveal the TabBar (70px height + 20px padding)
         zIndex: 50, // Below TabBar (usually 100) but above everything else
         justifyContent: 'flex-end', // Align to bottom
     },
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: RADIUS.xl,
         overflow: 'hidden',
         ...SHADOWS.lg,
-        paddingBottom: 20, // Reduced padding so input sits lower, but still safe from bottom edge
+        paddingBottom: 0,
     }
 });
 

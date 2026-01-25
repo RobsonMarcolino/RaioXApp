@@ -1,12 +1,99 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ImageBackground, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ImageBackground, Linking, Animated, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, User, Bot, BarChart2, Store, FileText, ExternalLink, ChevronLeft } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData, callGoogleAI } from '../services/aiService';
+import { QUICK_REPLIES, BOT_KNOWLEDGE } from '../data/chatData';
 
 import { useNavigation } from '@react-navigation/native';
 import { useChat } from '../context/ChatContext';
+
+// Componente de Mensagem Animada
+const AnimatedMessage = ({ children, isUser }) => {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(20)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 400,
+                useNativeDriver: true,
+            })
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.View
+            style={[
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+                // Align self to ensure animation doesn't stretch container weirdly
+                { width: '100%' }
+            ]}
+        >
+            {children}
+        </Animated.View>
+    );
+};
+
+const TypingIndicator = () => {
+    const dot1 = useRef(new Animated.Value(0)).current;
+    const dot2 = useRef(new Animated.Value(0)).current;
+    const dot3 = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const animate = (dot, delay) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(dot, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                        delay: delay
+                    }),
+                    Animated.timing(dot, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true
+                    })
+                ])
+            ).start();
+        };
+
+        animate(dot1, 0);
+        animate(dot2, 200);
+        animate(dot3, 400);
+    }, []);
+
+    const dotStyle = (anim) => ({
+        opacity: anim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.3, 1]
+        }),
+        transform: [{
+            translateY: anim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -5]
+            })
+        }]
+    });
+
+    return (
+        <View style={styles.typingContainer}>
+            <View style={styles.typingBubble}>
+                <Animated.View style={[styles.typingDot, dotStyle(dot1)]} />
+                <Animated.View style={[styles.typingDot, dotStyle(dot2)]} />
+                <Animated.View style={[styles.typingDot, dotStyle(dot3)]} />
+            </View>
+        </View>
+    );
+};
 
 const ChatScreen = ({ isOverlay }) => {
     const navigation = useNavigation();
@@ -21,13 +108,11 @@ const ChatScreen = ({ isOverlay }) => {
 
     useEffect(() => {
         loadData();
-        // Initial welcome message
-        setMessages([{
-            id: '0',
-            text: 'Olá! Sou o assistente Raio-X Score 5. Como posso ajudar você hoje?',
-            sender: 'bot',
-            timestamp: new Date(),
-        }]);
+        // Initial welcome message REMOVED - We will use Zero State instead
+        // or we can keep it if the user wants a history. 
+        // User requested "Zero State" implies empty list initially OR specific welcome tailored to zero state.
+        // Let's start EMPTY to show the Zero State logic, or check prior messages.
+        // For this app, let's start empty to show the "Robô" as requested.
     }, []);
 
     const loadData = async () => {
@@ -49,12 +134,24 @@ const ChatScreen = ({ isOverlay }) => {
         return found;
     };
 
-    const handleSend = async () => {
-        if (!inputText.trim()) return;
+    const handleReset = () => {
+        setMessages([]);
+        setInputText('');
+    };
+
+    const handleSend = async (textOverride = null) => {
+        const textToSend = textOverride || inputText;
+        if (!textToSend.trim()) return;
+
+        // Command to reset chat
+        if (textToSend.trim().toLowerCase() === 'menu') {
+            handleReset();
+            return;
+        }
 
         const userMessage = {
             id: Date.now().toString(),
-            text: inputText,
+            text: textToSend,
             sender: 'user',
             timestamp: new Date(),
         };
@@ -64,6 +161,34 @@ const ChatScreen = ({ isOverlay }) => {
         setIsLoading(true);
         setIsTyping(true);
 
+        // 1. Check Local Knowledge Base (Instant Response)
+        const lowerText = textToSend.trim().toLowerCase();
+        let localResponse = null;
+
+        // Check exact match or inclusion for some keywords
+        for (const [key, value] of Object.entries(BOT_KNOWLEDGE)) {
+            if (lowerText.includes(key)) {
+                localResponse = value;
+                break;
+            }
+        }
+
+        if (localResponse) {
+            setTimeout(() => {
+                const botMessage = {
+                    id: Date.now().toString() + '_bot',
+                    text: localResponse,
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, botMessage]);
+                setIsLoading(false);
+                setIsTyping(false);
+            }, 800); // Small "fake" delay for realism
+            return;
+        }
+
+        // 2. If no local match, proceed with normal logic (Google Sheet / AI)
         try {
             // Check if message contains an EG code
             const egPattern = /\d{2,6}-\d/;
@@ -232,7 +357,7 @@ const ChatScreen = ({ isOverlay }) => {
                         // Regular text, split by newlines to handle lists
                         const lines = part.split('\n');
                         return lines.map((line, lineIndex) => {
-                            if (line.trim().startsWith('-')) {
+                            if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
                                 // List item
                                 return (
                                     <View key={`${index}-${lineIndex}`} style={{ flexDirection: 'row', alignItems: 'flex-start', marginVertical: 2 }}>
@@ -253,6 +378,38 @@ const ChatScreen = ({ isOverlay }) => {
             </View>
         );
     };
+
+    const ZeroState = () => (
+        <View style={styles.zeroStateContainer}>
+            <View style={styles.zeroStateIconContainer}>
+                <Bot size={64} color={COLORS.primary} />
+            </View>
+            <Text style={styles.zeroStateTitle}>Olá! Sou seu Assistente</Text>
+            <Text style={styles.zeroStateSubtitle}>
+                Que tal uma análise pra animar?
+            </Text>
+
+            <View style={styles.centerChipsContainer}>
+                {QUICK_REPLIES.map((reply) => (
+                    <TouchableOpacity
+                        key={reply.id}
+                        style={styles.centerChip}
+                        onPress={() => {
+                            if (reply.url) {
+                                Linking.openURL(reply.url);
+                            } else {
+                                handleSend(reply.prompt);
+                            }
+                        }}
+                        disabled={isLoading}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.centerChipText}>{reply.text}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </View>
+    );
 
     const ActionButtons = () => {
         const actions = [
@@ -327,50 +484,52 @@ const ChatScreen = ({ isOverlay }) => {
         const showActions = item.card && item.card.share && item.card.share.status === 'danger';
 
         return (
-            <View style={[
-                styles.messageContainer,
-                isUser ? styles.userMessageContainer : styles.botMessageContainer,
-                { flexDirection: 'column' } // Changed to column to stack actions below
-            ]}>
-                <View style={{ flexDirection: 'row', width: '100%', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
-                    {!isUser && (
-                        <View style={styles.avatarContainer}>
-                            <Bot size={20} color={COLORS.primary} />
+            <AnimatedMessage isUser={isUser}>
+                <View style={[
+                    styles.messageContainer,
+                    isUser ? styles.userMessageContainer : styles.botMessageContainer,
+                    { flexDirection: 'column' } // Changed to column to stack actions below
+                ]}>
+                    <View style={{ flexDirection: 'row', width: '100%', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                        {!isUser && (
+                            <View style={styles.avatarContainer}>
+                                <Bot size={20} color={COLORS.primary} />
+                            </View>
+                        )}
+                        <View style={{ maxWidth: '85%' }}>
+                            {/* Se tiver Card, mostra O Card. Se não, mostra o balão de texto normal */}
+                            {item.card ? (
+                                <AnalysisCard data={item.card} />
+                            ) : (
+                                <View style={[
+                                    styles.messageBubble,
+                                    isUser ? styles.userBubble : styles.botBubble
+                                ]}>
+                                    {/* Only use Typewriter for the VERY LAST message if it's from the bot and NOT an error */}
+                                    {!isUser && index === messages.length - 1 && !item.id.includes('_err') && !item.isLocal ? (
+                                        <TypewriterText text={item.text} />
+                                    ) : (
+                                        renderFormattedText(item.text, isUser)
+                                    )}
+                                </View>
+                            )}
                         </View>
-                    )}
-                    <View style={{ maxWidth: '85%' }}>
-                        {/* Se tiver Card, mostra O Card. Se não, mostra o balão de texto normal */}
-                        {item.card ? (
-                            <AnalysisCard data={item.card} />
-                        ) : (
-                            <View style={[
-                                styles.messageBubble,
-                                isUser ? styles.userBubble : styles.botBubble
-                            ]}>
-                                {/* Only use Typewriter for the VERY LAST message if it's from the bot and NOT an error */}
-                                {!isUser && index === messages.length - 1 && !item.id.includes('_err') ? (
-                                    <TypewriterText text={item.text} />
-                                ) : (
-                                    renderFormattedText(item.text, isUser)
-                                )}
+
+                        {isUser && (
+                            <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
+                                <User size={20} color="#1A1A1A" />
                             </View>
                         )}
                     </View>
 
-                    {isUser && (
-                        <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
-                            <User size={20} color="#1A1A1A" />
+                    {/* Show Action Buttons if condition is met */}
+                    {showActions && (
+                        <View style={{ paddingLeft: 40, width: '100%' }}>
+                            <ActionButtons />
                         </View>
                     )}
                 </View>
-
-                {/* Show Action Buttons if condition is met */}
-                {showActions && (
-                    <View style={{ paddingLeft: 40, width: '100%' }}>
-                        <ActionButtons />
-                    </View>
-                )}
-            </View>
+            </AnimatedMessage>
         );
     };
 
@@ -398,7 +557,9 @@ const ChatScreen = ({ isOverlay }) => {
                         <ChevronLeft size={28} color="#FFF" />
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>Raio-X Score 5</Text>
+
+
+                    <Text style={styles.headerTitle}>Assistente Virtual</Text>
                     <Text style={styles.headerSubtitle}>
                         {csvData.length > 0 ? `${csvData.length} estabelecimentos` : 'Carregando dados...'}
                     </Text>
@@ -416,20 +577,21 @@ const ChatScreen = ({ isOverlay }) => {
                 </TouchableOpacity>
             </ImageBackground>
 
-            <FlatList
-                ref={flatListRef}
-                data={messages}
-                renderItem={renderMessage}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.listContent}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-            />
-
-            {isTyping && (
-                <View style={styles.typingContainer}>
-                    <Text style={styles.typingText}>IA está digitando...</Text>
-                </View>
+            {/* Main Content Area */}
+            {messages.length === 0 ? (
+                <ZeroState />
+            ) : (
+                <FlatList
+                    ref={flatListRef}
+                    data={messages}
+                    renderItem={renderMessage}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.listContent}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                />
             )}
+
+            {isTyping && <TypingIndicator />}
 
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
                 <View style={styles.inputWrapper}>
@@ -445,7 +607,7 @@ const ChatScreen = ({ isOverlay }) => {
                         />
                         <TouchableOpacity
                             style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-                            onPress={handleSend}
+                            onPress={() => handleSend()}
                             disabled={!inputText.trim() || isLoading}
                         >
                             {isLoading ? (
@@ -561,17 +723,31 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     typingContainer: {
-        padding: SPACING.sm,
-        paddingLeft: SPACING.xl,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        alignItems: 'flex-start', // Align to left like a received message
     },
-    typingText: {
-        fontSize: 12,
-        color: COLORS.textTertiary,
-        fontStyle: 'italic',
+    typingBubble: {
+        flexDirection: 'row',
+        backgroundColor: '#FFF',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderBottomLeftRadius: 4,
+        borderWidth: 1,
+        borderColor: COLORS.borderLight,
+        ...SHADOWS.sm,
+        gap: 4
+    },
+    typingDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#666',
     },
     inputWrapper: {
         padding: SPACING.md,
-        paddingBottom: SPACING.md + 80, // Add extra padding to clear the absolute Tab Bar
+        paddingBottom: SPACING.md, // Removed extra padding since Overlay handles bottom spacing relative to TabBar
         backgroundColor: '#F5F5F5',
     },
     inputContainer: {
@@ -747,6 +923,59 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#333',
         fontWeight: '500',
+    },
+    zeroStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.xl,
+    },
+    zeroStateIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#FFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+        ...SHADOWS.md,
+        borderWidth: 1,
+        borderColor: '#EEE'
+    },
+    zeroStateTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: COLORS.primary, // Using Brand Color like "Cheguei, Robson!"
+        marginBottom: SPACING.xs,
+        textAlign: 'center'
+    },
+    zeroStateSubtitle: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: SPACING.xl * 2,
+    },
+    centerChipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 12,
+        maxWidth: '100%',
+    },
+    centerChip: {
+        backgroundColor: '#FFF',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: '#EEE',
+        ...SHADOWS.sm,
+        marginBottom: 8,
+    },
+    centerChipText: {
+        color: '#333',
+        fontWeight: '600',
+        fontSize: 14,
     }
 });
 
