@@ -550,6 +550,8 @@ const styles = StyleSheet.create({
         ...SHADOWS.sm,
         overflow: 'hidden',
         position: 'relative',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     cardSmall: {
         width: '48%', // Use percentage for responsiveness
