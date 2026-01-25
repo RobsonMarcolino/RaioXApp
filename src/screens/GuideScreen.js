@@ -50,16 +50,7 @@ const GuideScreen = () => {
             style={styles.container}
             resizeMode="cover"
         >
-            <Animated.View style={[
-                styles.content,
-                {
-                    opacity: opacityAnim,
-                    transform: [
-                        { scale: scaleAnim },
-                        { translateY: translateYAnim }
-                    ]
-                }
-            ]}>
+            <View style={styles.content}>
                 <ScrollView
                     contentContainerStyle={{
                         flexGrow: 1,
@@ -96,7 +87,7 @@ const GuideScreen = () => {
                         </TouchableOpacity>
                     </BlurView>
                 </ScrollView>
-            </Animated.View>
+            </View>
         </ImageBackground>
     );
 };
