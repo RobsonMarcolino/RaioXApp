@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
         borderTopRightRadius: RADIUS.xl,
         overflow: 'hidden',
         ...SHADOWS.lg,
-        paddingBottom: 80, // Add padding for TabBar visibility
+        paddingBottom: 20, // Reduced padding so input sits lower, but still safe from bottom edge
     }
 });
 

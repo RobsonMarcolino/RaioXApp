@@ -58,11 +58,11 @@ const GuideScreen = () => {
                     ]
                 }
             ]}>
-                <ScrollView
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.lg }} // Increased padding
-                    showsVerticalScrollIndicator={false}
-                >
-                    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, justifyContent: 'center' }}>
+                <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+                    <ScrollView
+                        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.lg }}
+                        showsVerticalScrollIndicator={false}
+                    >
                         <BlurView intensity={40} tint="dark" style={styles.glassCard}>
                             <View style={styles.header}>
                                 <Text style={styles.title}>Guia de Bolso</Text>
@@ -88,8 +88,8 @@ const GuideScreen = () => {
                                 <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
                             </TouchableOpacity>
                         </BlurView>
-                    </SafeAreaView>
-                </ScrollView>
+                    </ScrollView>
+                </SafeAreaView>
             </Animated.View>
         </ImageBackground>
     );
