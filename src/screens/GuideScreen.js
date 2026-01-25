@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Platform, ScrollView } from 'react-native';
-import { BookOpen, ExternalLink } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView, Dimensions } from 'react-native';
+import { BookOpen, ExternalLink, ChevronRight } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
+const { width } = Dimensions.get('window');
 const GUIDE_URL = "https://www.canva.com/design/DAG56u-5HwE/F5z_aBug3kjsi2pM2j6jRw/edit?utm_content=DAG56u-5HwE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 const GuideScreen = () => {
@@ -19,35 +21,47 @@ const GuideScreen = () => {
     };
 
     return (
-        <ImageBackground
-            source={require('../../assets/GuiaDeBolso.png')}
+        <LinearGradient
+            colors={['#1A1A1A', '#000000']}
             style={styles.container}
-            resizeMode="cover"
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
         >
-            <View style={styles.overlay}>
-                <ScrollView
-                    contentContainerStyle={{
-                        flexGrow: 1,
-                        justifyContent: 'center',
-                        padding: SPACING.lg,
-                        paddingTop: insets.top + SPACING.xl,
-                        paddingBottom: insets.bottom + SPACING.lg
-                    }}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.card}>
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Guia de Bolso</Text>
-                            <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
+            <ScrollView
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    justifyContent: 'center',
+                    padding: SPACING.lg,
+                    paddingTop: insets.top + SPACING.xl,
+                    paddingBottom: insets.bottom + SPACING.lg
+                }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header Decoration */}
+                <View style={styles.headerContainer}>
+                    <View style={styles.badge}>
+                        <BookOpen size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                        <Text style={styles.badgeText}>DOCUMENTAÇÃO OFICIAL</Text>
+                    </View>
+                    <Text style={styles.heroTitle}>Guia de Bolso</Text>
+                    <Text style={styles.heroSubtitle}>
+                        Todas as estratégias e ferramentas para a sua execução perfeita.
+                    </Text>
+                </View>
+
+                {/* Main Card */}
+                <View style={styles.card}>
+                    <LinearGradient
+                        colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.01)']}
+                        style={styles.cardGradient}
+                    >
+                        <View style={styles.iconCircle}>
+                            <BookOpen size={40} color={COLORS.primary} />
                         </View>
 
-                        <View style={styles.iconContainer}>
-                            <BookOpen size={56} color={COLORS.primary} />
-                        </View>
-
-                        <Text style={styles.cardTitle}>Guia Completo</Text>
+                        <Text style={styles.cardTitle}>Guia Completo 2024</Text>
                         <Text style={styles.cardDescription}>
-                            Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
+                            Acesse agora o manual digital com calendário, power packs e diretrizes de execução.
                         </Text>
 
                         <TouchableOpacity
@@ -55,62 +69,85 @@ const GuideScreen = () => {
                             onPress={handleOpenGuide}
                             activeOpacity={0.8}
                         >
-                            <Text style={styles.buttonText}>Acessar Guia</Text>
-                            <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
+                            <Text style={styles.buttonText}>ACESSAR MATERIAL</Text>
+                            <ExternalLink size={20} color="#1A1A1A" style={{ marginLeft: 8 }} />
                         </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </View>
-        </ImageBackground>
+                    </LinearGradient>
+                </View>
+
+                {/* Decorative Elements */}
+                <View style={styles.footerNote}>
+                    <View style={styles.divider} />
+                    <Text style={styles.footerText}>Raio-X Score 5 • Excelência em Execução</Text>
+                </View>
+
+            </ScrollView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1A1A1A', // Fallback color
     },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)', // Dark overlay for text readability on bg
+    headerContainer: {
+        alignItems: 'flex-start',
+        marginBottom: SPACING.xxl,
+    },
+    badge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(252, 213, 53, 0.1)',
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.xs,
+        borderRadius: RADIUS.full,
+        marginBottom: SPACING.md,
+        borderWidth: 1,
+        borderColor: 'rgba(252, 213, 53, 0.2)',
+    },
+    badgeText: {
+        color: COLORS.primary,
+        fontSize: 12,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    heroTitle: {
+        fontSize: 42,
+        fontWeight: '900',
+        color: '#FFF',
+        marginBottom: SPACING.sm,
+        letterSpacing: -1,
+        lineHeight: 48,
+    },
+    heroSubtitle: {
+        fontSize: 18,
+        color: COLORS.gray400,
+        lineHeight: 26,
+        maxWidth: '90%',
     },
     card: {
         width: '100%',
-        padding: SPACING.xl,
         borderRadius: RADIUS.xl,
-        alignItems: 'center',
-        backgroundColor: 'rgba(26, 26, 26, 0.95)', // Solid dark card almost opaque
+        overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: '#1E1E1E',
         ...SHADOWS.lg,
     },
-    header: {
+    cardGradient: {
+        padding: SPACING.xl,
         alignItems: 'center',
-        marginBottom: SPACING.xl,
     },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#FFF',
-        marginBottom: SPACING.xs,
-        textAlign: 'center',
-        letterSpacing: 1,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.7)',
-        textAlign: 'center',
-    },
-    iconContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+    iconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(252, 213, 53, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: SPACING.lg,
         borderWidth: 1,
-        borderColor: COLORS.primary, // Highlight border
+        borderColor: 'rgba(252, 213, 53, 0.2)',
     },
     cardTitle: {
         fontSize: 24,
@@ -121,27 +158,42 @@ const styles = StyleSheet.create({
     },
     cardDescription: {
         fontSize: 16,
-        color: 'rgba(255,255,255,0.8)',
+        color: COLORS.gray400,
         textAlign: 'center',
-        marginBottom: SPACING.xxl,
+        marginBottom: SPACING.xl,
         lineHeight: 24,
     },
     button: {
         flexDirection: 'row',
-        backgroundColor: COLORS.primary, // Bees Yellow
+        backgroundColor: COLORS.primary,
+        paddingVertical: 16,
         paddingHorizontal: SPACING.xl,
-        paddingVertical: SPACING.lg,
-        borderRadius: RADIUS.xl,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
         width: '100%',
         justifyContent: 'center',
-        ...SHADOWS.md,
     },
     buttonText: {
-        color: '#1A1A1A', // Black text
-        fontSize: 18,
+        color: '#1A1A1A',
+        fontSize: 16,
         fontWeight: 'bold',
-        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    footerNote: {
+        marginTop: SPACING.xxl,
+        alignItems: 'center',
+        opacity: 0.5,
+    },
+    divider: {
+        width: 40,
+        height: 4,
+        backgroundColor: COLORS.gray700,
+        borderRadius: 2,
+        marginBottom: SPACING.md,
+    },
+    footerText: {
+        color: COLORS.gray500,
+        fontSize: 12,
     },
 });
 
