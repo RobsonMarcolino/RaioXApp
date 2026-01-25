@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ImageBackground } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, ImageBackground, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Send, User, Bot } from 'lucide-react-native';
+import { Send, User, Bot, BarChart2, Store, FileText, ExternalLink, ChevronLeft } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData, callGoogleAI } from '../services/aiService';
 
-const ChatScreen = ({ navigation }) => {
+import { useNavigation } from '@react-navigation/native';
+import { useChat } from '../context/ChatContext';
+
+const ChatScreen = ({ isOverlay }) => {
+    const navigation = useNavigation();
+    const { closeChat } = useChat(); // Access context to close overlay
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -108,6 +113,27 @@ const ChatScreen = ({ navigation }) => {
             setIsLoading(false);
             setIsTyping(false);
         }
+    };
+
+    // Typewriter Component
+    const TypewriterText = ({ text, onComplete }) => {
+        const [displayedText, setDisplayedText] = useState('');
+
+        useEffect(() => {
+            let index = 0;
+            const timer = setInterval(() => {
+                if (index < text.length) {
+                    setDisplayedText((prev) => prev + text.charAt(index));
+                    index++;
+                } else {
+                    clearInterval(timer);
+                    if (onComplete) onComplete();
+                }
+            }, 10); // Adjust speed here (lower is faster)
+            return () => clearInterval(timer);
+        }, [text]);
+
+        return renderFormattedText(displayedText, false);
     };
 
     // Componente Visual do Card
@@ -228,35 +254,120 @@ const ChatScreen = ({ navigation }) => {
         );
     };
 
-    const renderMessage = ({ item }) => {
+    const ActionButtons = () => {
+        const actions = [
+            {
+                id: 'verify_eg',
+                label: 'Verificar outro EG',
+                icon: <BarChart2 size={16} color={COLORS.primary} />,
+                actionType: 'chat',
+            },
+            {
+                id: 'request_freezer',
+                label: 'Solicitar Freezer',
+                icon: <Store size={16} color={COLORS.primary} />, // Using Store as proxy for Freezer/Equipment
+                url: 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=GUvwznZ3lEq4mzdcd6j5Nhknc28u6bVBruON6FWBAnlUQTdINFpHSjA3R1NERkVPUzdPVTNLQ09TQS4u',
+                actionType: 'link',
+            },
+            {
+                id: 'fill_info',
+                label: 'Preencher Informações',
+                icon: <FileText size={16} color={COLORS.primary} />,
+                url: 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=GUvwznZ3lEq4mzdcd6j5Nhknc28u6bVBruON6FWBAnlUQTdINFpHSjA3R1NERkVPUzdPVTNLQ09TQS4u',
+                actionType: 'link',
+            }
+        ];
+
+        const handleAction = async (action) => {
+            if (action.actionType === 'chat') {
+                const botMessage = {
+                    id: Date.now().toString() + '_prompt',
+                    text: 'Qual loja vamos analisar agora? (Digite Nome ou EG)',
+                    sender: 'bot',
+                    timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, botMessage]);
+            } else if (action.url) {
+                const supported = await Linking.canOpenURL(action.url);
+                if (supported) {
+                    await Linking.openURL(action.url);
+                } else {
+                    alert(`Não foi possível abrir o link: ${action.url}`);
+                }
+            }
+        };
+
+        return (
+            <View style={styles.actionButtonsContainer}>
+                <Text style={styles.actionTitle}>Ações Recomendadas:</Text>
+                <View style={styles.actionsGrid}>
+                    {actions.map((action) => (
+                        <TouchableOpacity
+                            key={action.id}
+                            style={styles.actionButton}
+                            onPress={() => handleAction(action)}
+                        >
+                            <View style={styles.actionIcon}>
+                                {action.icon}
+                            </View>
+                            <Text style={styles.actionLabel}>{action.label}</Text>
+                            {action.actionType === 'link' && (
+                                <ExternalLink size={12} color={COLORS.textTertiary} style={{ marginLeft: 'auto' }} />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+        );
+    };
+
+    const renderMessage = ({ item, index }) => {
         const isUser = item.sender === 'user';
+        // Check if we should show actions: only if it has a card AND status is 'danger' (Queda)
+        const showActions = item.card && item.card.share && item.card.share.status === 'danger';
+
         return (
             <View style={[
                 styles.messageContainer,
-                isUser ? styles.userMessageContainer : styles.botMessageContainer
+                isUser ? styles.userMessageContainer : styles.botMessageContainer,
+                { flexDirection: 'column' } // Changed to column to stack actions below
             ]}>
-                {!isUser && (
-                    <View style={styles.avatarContainer}>
-                        <Bot size={20} color={COLORS.primary} />
+                <View style={{ flexDirection: 'row', width: '100%', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                    {!isUser && (
+                        <View style={styles.avatarContainer}>
+                            <Bot size={20} color={COLORS.primary} />
+                        </View>
+                    )}
+                    <View style={{ maxWidth: '85%' }}>
+                        {/* Se tiver Card, mostra O Card. Se não, mostra o balão de texto normal */}
+                        {item.card ? (
+                            <AnalysisCard data={item.card} />
+                        ) : (
+                            <View style={[
+                                styles.messageBubble,
+                                isUser ? styles.userBubble : styles.botBubble
+                            ]}>
+                                {/* Only use Typewriter for the VERY LAST message if it's from the bot and NOT an error */}
+                                {!isUser && index === messages.length - 1 && !item.id.includes('_err') ? (
+                                    <TypewriterText text={item.text} />
+                                ) : (
+                                    renderFormattedText(item.text, isUser)
+                                )}
+                            </View>
+                        )}
                     </View>
-                )}
-                <View style={{ maxWidth: '85%' }}>
-                    {/* Se tiver Card, mostra O Card. Se não, mostra o balão de texto normal */}
-                    {item.card ? (
-                        <AnalysisCard data={item.card} />
-                    ) : (
-                        <View style={[
-                            styles.messageBubble,
-                            isUser ? styles.userBubble : styles.botBubble
-                        ]}>
-                            {renderFormattedText(item.text, isUser)}
+
+                    {isUser && (
+                        <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
+                            <User size={20} color="#1A1A1A" />
                         </View>
                     )}
                 </View>
 
-                {isUser && (
-                    <View style={[styles.avatarContainer, { backgroundColor: COLORS.primary }]}>
-                        <User size={20} color="#1A1A1A" />
+                {/* Show Action Buttons if condition is met */}
+                {showActions && (
+                    <View style={{ paddingLeft: 40, width: '100%' }}>
+                        <ActionButtons />
                     </View>
                 )}
             </View>
@@ -273,6 +384,20 @@ const ChatScreen = ({ navigation }) => {
             >
                 {/* Overlay for better text readability if needed, or just the content */}
                 <View style={styles.headerContent}>
+                    {/* Botão de Voltar (esquerda) */}
+                    <TouchableOpacity
+                        style={{ position: 'absolute', left: 0, padding: 8, zIndex: 20 }}
+                        onPress={() => {
+                            if (isOverlay) {
+                                closeChat();
+                            } else {
+                                navigation.goBack();
+                            }
+                        }}
+                    >
+                        <ChevronLeft size={28} color="#FFF" />
+                    </TouchableOpacity>
+
                     <Text style={styles.headerTitle}>Raio-X Score 5</Text>
                     <Text style={styles.headerSubtitle}>
                         {csvData.length > 0 ? `${csvData.length} estabelecimentos` : 'Carregando dados...'}
@@ -588,6 +713,40 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: 'bold',
         color: '#444'
+    },
+    // --- ESTILOS DOS BOTÕES DE AÇÃO (NOVO) ---
+    actionButtonsContainer: {
+        marginTop: 8,
+        marginBottom: 16,
+        maxWidth: 300,
+    },
+    actionTitle: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: COLORS.textSecondary,
+        marginBottom: 8,
+        marginLeft: 4
+    },
+    actionsGrid: {
+        gap: 8,
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF',
+        padding: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        ...SHADOWS.sm,
+    },
+    actionIcon: {
+        marginRight: 10,
+    },
+    actionLabel: {
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '500',
     }
 });
 

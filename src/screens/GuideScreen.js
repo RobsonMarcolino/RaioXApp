@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
@@ -8,6 +8,31 @@ const { width, height } = Dimensions.get('window');
 const GUIDE_URL = "https://www.canva.com/design/DAG56u-5HwE/F5z_aBug3kjsi2pM2j6jRw/edit?utm_content=DAG56u-5HwE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 const GuideScreen = () => {
+    const scaleAnim = React.useRef(new Animated.Value(0.85)).current;
+    const opacityAnim = React.useRef(new Animated.Value(0)).current;
+    const translateYAnim = React.useRef(new Animated.Value(50)).current; // Slide up slightly
+
+    React.useEffect(() => {
+        Animated.parallel([
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 8,
+                tension: 40,
+                useNativeDriver: Platform.OS !== 'web',
+            }),
+            Animated.timing(opacityAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: Platform.OS !== 'web',
+            }),
+            Animated.spring(translateYAnim, {
+                toValue: 0,
+                friction: 8,
+                useNativeDriver: Platform.OS !== 'web',
+            })
+        ]).start();
+    }, []);
+
     const handleOpenGuide = async () => {
         const supported = await Linking.canOpenURL(GUIDE_URL);
         if (supported) {
@@ -23,33 +48,47 @@ const GuideScreen = () => {
             style={styles.container}
             resizeMode="cover"
         >
-            <View style={styles.overlay}>
-                <BlurView intensity={40} tint="dark" style={styles.glassCard}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>Guia de Bolso</Text>
-                        <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
-                    </View>
+            <Animated.View style={[
+                styles.content,
+                {
+                    opacity: opacityAnim,
+                    transform: [
+                        { scale: scaleAnim },
+                        { translateY: translateYAnim }
+                    ]
+                }
+            ]}>
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.md }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <BlurView intensity={40} tint="dark" style={styles.glassCard}>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Guia de Bolso</Text>
+                            <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
+                        </View>
 
-                    <View style={styles.iconContainer}>
-                        <BookOpen size={56} color={COLORS.primary} />
-                        <View style={styles.iconGlow} />
-                    </View>
+                        <View style={styles.iconContainer}>
+                            <BookOpen size={56} color={COLORS.primary} />
+                            <View style={styles.iconGlow} />
+                        </View>
 
-                    <Text style={styles.cardTitle}>Guia Completo</Text>
-                    <Text style={styles.cardDescription}>
-                        Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
-                    </Text>
+                        <Text style={styles.cardTitle}>Guia Completo</Text>
+                        <Text style={styles.cardDescription}>
+                            Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
+                        </Text>
 
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={handleOpenGuide}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.buttonText}>Acessar Guia</Text>
-                        <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
-                    </TouchableOpacity>
-                </BlurView>
-            </View>
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleOpenGuide}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.buttonText}>Acessar Guia</Text>
+                            <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
+                        </TouchableOpacity>
+                    </BlurView>
+                </ScrollView>
+            </Animated.View>
         </ImageBackground>
     );
 };
@@ -57,8 +96,7 @@ const GuideScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        width: width,
-        height: height,
+        // Removed fixed width/height to allow flex to fill screen on all devices
     },
     overlay: {
         flex: 1,

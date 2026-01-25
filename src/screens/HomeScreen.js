@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MessageSquare, Store, BookOpen, TrendingUp, Bell, User, Bot, ExternalLink, ChevronRight, BarChart2, FileText, AlertTriangle } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 import { loadSheetData } from '../services/aiService';
+import { useChat } from '../context/ChatContext';
 
 const { width: windowWidth } = Dimensions.get('window');
 // Clamp width on web to match MobileContainer's max width (approx 420)
@@ -42,117 +43,133 @@ const INFINITE_LINKS = Array(100).fill(RAW_LINKS).flat().map((item, index) => ({
 const INITIAL_INDEX = 150; // Start in the middle (multiple of 3)
 
 const HomeScreen = ({ navigation }) => {
+    const { openChat } = useChat();
     const [storeCount, setStoreCount] = useState(0);
-    const flatListRef = useRef(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(INITIAL_INDEX);
+    const [activeDotIndex, setActiveDotIndex] = useState(0);
+
     const scrollY = useRef(new Animated.Value(0)).current;
+
+    // Header Animation Values
+    const headerTranslateY = scrollY.interpolate({
+        inputRange: [0, 100],
+        outputRange: [0, -50],
+        extrapolate: 'clamp',
+    });
+
+    const headerOpacity = scrollY.interpolate({
+        inputRange: [0, 50, 100],
+        outputRange: [1, 0.9, 0],
+        extrapolate: 'clamp',
+    });
+
+    // Sync active dot with current index
+    useEffect(() => {
+        const rawIndex = currentIndex % RAW_LINKS.length;
+        setActiveDotIndex(rawIndex);
+    }, [currentIndex]);
+
+    // Auto-scroll logic
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentIndex(prev => {
+                const nextIndex = prev + 1;
+                // Scroll to the next item
+                flatListRef.current?.scrollToOffset({
+                    offset: nextIndex * (CARD_WIDTH + SPACING.md),
+                    animated: true
+                });
+                return nextIndex;
+            });
+        }, 4000); // 4 seconds interval
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const flatListRef = useRef(null);
 
     useEffect(() => {
         loadData();
     }, []);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentIndex(prevIndex => {
-                const nextIndex = prevIndex + 1;
-                flatListRef.current?.scrollToIndex({
-                    index: nextIndex,
-                    animated: true,
-                    viewPosition: 0, // Align to start
-                    viewOffset: 0
-                });
-                return nextIndex;
-            });
-        }, 4000); // Slower scroll for banners
-
-        return () => clearInterval(interval);
-    }, []);
-
     const loadData = async () => {
-        const data = await loadSheetData();
-        setStoreCount(data.length);
+        try {
+            const data = await loadSheetData();
+            setStoreCount(data.length);
+        } catch (error) {
+            console.error('Erro ao carregar dados:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const openLink = (url) => {
-        Linking.openURL(url).catch(err => console.error("Couldn't load page", err));
+    const openLink = async (url) => {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+            await Linking.openURL(url);
+        } else {
+            alert(`Não foi possível abrir o link: ${url}`);
+        }
     };
 
-    const renderCard = (title, subtitle, icon, color, onPress, WatermarkIcon, size = 'small') => (
+    const renderCard = (title, subtitle, icon, color, onPress, IconComponent) => (
         <TouchableOpacity
-            style={[styles.card, size === 'large' ? styles.cardLarge : styles.cardSmall]}
+            style={[styles.card, styles.cardSmall]}
             onPress={onPress}
-            activeOpacity={0.8}
+            activeOpacity={0.9}
         >
             <LinearGradient
-                colors={['#2A2A2A', '#1A1A1A']}
+                colors={['#1A1A1A', '#000']}
                 style={styles.cardGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
             >
                 <View style={styles.cardContentWrapper}>
-                    <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: `${color}20` }]}>
                         {icon}
                     </View>
-                    <View style={styles.cardContent}>
+                    <View>
                         <Text style={styles.cardTitle}>{title}</Text>
                         <Text style={styles.cardSubtitle}>{subtitle}</Text>
                     </View>
                 </View>
-                {WatermarkIcon && (
-                    <View style={styles.watermarkContainer}>
-                        <WatermarkIcon size={120} color="rgba(255,255,255,0.05)" />
-                    </View>
-                )}
+                {/* Decorative Watermark */}
+                <View style={styles.watermarkContainer}>
+                    <IconComponent size={80} color="rgba(255,255,255,0.05)" />
+                </View>
             </LinearGradient>
         </TouchableOpacity>
     );
 
-    const renderBannerItem = ({ item }) => {
-        const IconComponent = item.icon;
-        return (
-            <TouchableOpacity
-                style={styles.bannerCard}
-                onPress={() => openLink(item.url)}
-                activeOpacity={0.9}
+    const renderBannerItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.bannerCard}
+            onPress={() => openLink(item.url)}
+            activeOpacity={0.9}
+        >
+            <LinearGradient
+                colors={['#FCD535', '#F4B400']} // Ambev Yellow Gradient
+                style={styles.bannerGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
             >
-                <LinearGradient
-                    colors={[COLORS.primary, '#F4B400']} // Yellow Gradient Background
-                    style={styles.bannerGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                >
-                    <View style={styles.bannerContent}>
-                        <View style={styles.bannerIconContainer}>
-                            <IconComponent size={24} color="#1A1A1A" />
-                        </View>
-                        <View style={styles.bannerTextContainer}>
-                            <Text style={styles.bannerTitle}>{item.title}</Text>
-                            <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
-                        </View>
-                        <View style={styles.bannerButton}>
-                            <ChevronRight size={20} color="#1A1A1A" />
-                        </View>
+                <View style={styles.bannerContent}>
+                    <View style={styles.bannerIconContainer}>
+                        <item.icon size={20} color="#1A1A1A" />
                     </View>
-                    {/* Decorative Elements */}
-                    <View style={styles.bannerDecoration} />
-                </LinearGradient>
-            </TouchableOpacity>
-        );
-    };
-
-    // Calculate actual active index for pagination dots (0, 1, or 2)
-    const activeDotIndex = currentIndex % RAW_LINKS.length;
-
-    // Parallax Interpolation
-    const headerTranslateY = scrollY.interpolate({
-        inputRange: [0, 150],
-        outputRange: [0, -75], // Move header up half the speed for parallax feel
-        extrapolate: 'clamp',
-    });
-
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 150],
-        outputRange: [1, 0.9],
-        extrapolate: 'clamp',
-    });
+                    <View style={styles.bannerTextContainer}>
+                        <Text style={styles.bannerTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.bannerSubtitle} numberOfLines={1}>{item.subtitle}</Text>
+                    </View>
+                    <View style={styles.bannerButton}>
+                        <ExternalLink size={16} color="#1A1A1A" />
+                    </View>
+                </View>
+                <View style={styles.bannerDecoration} />
+            </LinearGradient>
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
@@ -202,7 +219,7 @@ const HomeScreen = ({ navigation }) => {
                 {/* Main Action - AI Chat */}
                 <TouchableOpacity
                     style={styles.mainCard}
-                    onPress={() => navigation.navigate('Chat')}
+                    onPress={openChat}
                     activeOpacity={0.9}
                 >
                     <LinearGradient
@@ -470,16 +487,6 @@ const styles = StyleSheet.create({
         right: 0,
         zIndex: 10,
     },
-    // We need to push the scroll content down so it starts below the header
-    // But since we want parallax, we usually start with header visible. 
-    // Wait, typical parallax has header AT TOP, and content scrolls UNDER it or it moves.
-    // If I translate header UP, it disappears.
-    // Let's adjust content padding to start lower if the header were absolute.
-    // But my current code kept the structure: Header -> ScrollView.
-    // If I animate Header in place, the ScrollView is below it. If I translate Header Y -50, the SVG moves up, leaving white space.
-    // Fix: Structure needs to be: Container -> [Running Header (Abs)] -> ScrollView (with PaddingTop).
-    // Let's modify Container slightly in a future step or just accept the View structure.
-    // Actually, making header absolute is safer for Parallax.
     mainCard: {
         height: 180,
         borderRadius: RADIUS.xl,
