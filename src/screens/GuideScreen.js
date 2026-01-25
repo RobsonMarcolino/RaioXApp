@@ -1,39 +1,13 @@
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
-import { BlurView } from 'expo-blur';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Platform, ScrollView } from 'react-native';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
-const { width, height } = Dimensions.get('window');
 const GUIDE_URL = "https://www.canva.com/design/DAG56u-5HwE/F5z_aBug3kjsi2pM2j6jRw/edit?utm_content=DAG56u-5HwE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 const GuideScreen = () => {
-    const scaleAnim = React.useRef(new Animated.Value(0.85)).current;
-    const opacityAnim = React.useRef(new Animated.Value(0)).current;
-    const translateYAnim = React.useRef(new Animated.Value(50)).current; // Slide up slightly
     const insets = useSafeAreaInsets();
-
-    React.useEffect(() => {
-        Animated.parallel([
-            Animated.spring(scaleAnim, {
-                toValue: 1,
-                friction: 8,
-                tension: 40,
-                useNativeDriver: Platform.OS !== 'web',
-            }),
-            Animated.timing(opacityAnim, {
-                toValue: 1,
-                duration: 300,
-                useNativeDriver: Platform.OS !== 'web',
-            }),
-            Animated.spring(translateYAnim, {
-                toValue: 0,
-                friction: 8,
-                useNativeDriver: Platform.OS !== 'web',
-            })
-        ]).start();
-    }, []);
 
     const handleOpenGuide = async () => {
         const supported = await Linking.canOpenURL(GUIDE_URL);
@@ -50,18 +24,18 @@ const GuideScreen = () => {
             style={styles.container}
             resizeMode="cover"
         >
-            <View style={styles.content}>
+            <View style={styles.overlay}>
                 <ScrollView
                     contentContainerStyle={{
                         flexGrow: 1,
                         justifyContent: 'center',
                         padding: SPACING.lg,
-                        paddingTop: insets.top + SPACING.lg,
+                        paddingTop: insets.top + SPACING.xl,
                         paddingBottom: insets.bottom + SPACING.lg
                     }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <BlurView intensity={40} tint="dark" style={styles.glassCard}>
+                    <View style={styles.card}>
                         <View style={styles.header}>
                             <Text style={styles.title}>Guia de Bolso</Text>
                             <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
@@ -69,7 +43,6 @@ const GuideScreen = () => {
 
                         <View style={styles.iconContainer}>
                             <BookOpen size={56} color={COLORS.primary} />
-                            <View style={styles.iconGlow} />
                         </View>
 
                         <Text style={styles.cardTitle}>Guia Completo</Text>
@@ -85,7 +58,7 @@ const GuideScreen = () => {
                             <Text style={styles.buttonText}>Acessar Guia</Text>
                             <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
                         </TouchableOpacity>
-                    </BlurView>
+                    </View>
                 </ScrollView>
             </View>
         </ImageBackground>
@@ -95,27 +68,20 @@ const GuideScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // Removed fixed width/height to allow flex to fill screen on all devices
-    },
-    content: {
-        flex: 1,
+        backgroundColor: '#1A1A1A', // Fallback color
     },
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.2)', // Slightly darker overlay
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING.lg,
+        backgroundColor: 'rgba(0,0,0,0.4)', // Dark overlay for text readability on bg
     },
-    glassCard: {
+    card: {
         width: '100%',
         padding: SPACING.xl,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         alignItems: 'center',
-        overflow: 'hidden',
+        backgroundColor: 'rgba(26, 26, 26, 0.95)', // Solid dark card almost opaque
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
-        backgroundColor: 'rgba(20, 20, 20, 0.5)', // Darker glass
+        borderColor: 'rgba(255,255,255,0.1)',
         ...SHADOWS.lg,
     },
     header: {
@@ -144,17 +110,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: SPACING.lg,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-        position: 'relative',
-    },
-    iconGlow: {
-        position: 'absolute',
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: COLORS.primary,
-        opacity: 0.1,
-        zIndex: -1,
+        borderColor: COLORS.primary, // Highlight border
     },
     cardTitle: {
         fontSize: 24,
@@ -177,12 +133,9 @@ const styles = StyleSheet.create({
         paddingVertical: SPACING.lg,
         borderRadius: RADIUS.xl,
         alignItems: 'center',
-        ...SHADOWS.md,
         width: '100%',
         justifyContent: 'center',
-        shadowColor: COLORS.primary,
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
+        ...SHADOWS.md,
     },
     buttonText: {
         color: '#1A1A1A', // Black text
