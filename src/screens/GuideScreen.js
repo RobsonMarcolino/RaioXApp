@@ -98,6 +98,9 @@ const styles = StyleSheet.create({
         flex: 1,
         // Removed fixed width/height to allow flex to fill screen on all devices
     },
+    content: {
+        flex: 1,
+    },
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.2)', // Slightly darker overlay
