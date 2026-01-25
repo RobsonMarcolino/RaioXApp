@@ -1,9 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { BookOpen, ExternalLink } from 'lucide-react-native';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
