@@ -1,7 +1,7 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -59,34 +59,36 @@ const GuideScreen = () => {
                 }
             ]}>
                 <ScrollView
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.md }}
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.lg }} // Increased padding
                     showsVerticalScrollIndicator={false}
                 >
-                    <BlurView intensity={40} tint="dark" style={styles.glassCard}>
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Guia de Bolso</Text>
-                            <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
-                        </View>
+                    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, justifyContent: 'center' }}>
+                        <BlurView intensity={40} tint="dark" style={styles.glassCard}>
+                            <View style={styles.header}>
+                                <Text style={styles.title}>Guia de Bolso</Text>
+                                <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
+                            </View>
 
-                        <View style={styles.iconContainer}>
-                            <BookOpen size={56} color={COLORS.primary} />
-                            <View style={styles.iconGlow} />
-                        </View>
+                            <View style={styles.iconContainer}>
+                                <BookOpen size={56} color={COLORS.primary} />
+                                <View style={styles.iconGlow} />
+                            </View>
 
-                        <Text style={styles.cardTitle}>Guia Completo</Text>
-                        <Text style={styles.cardDescription}>
-                            Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
-                        </Text>
+                            <Text style={styles.cardTitle}>Guia Completo</Text>
+                            <Text style={styles.cardDescription}>
+                                Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
+                            </Text>
 
-                        <TouchableOpacity
-                            style={styles.button}
-                            onPress={handleOpenGuide}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.buttonText}>Acessar Guia</Text>
-                            <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
-                        </TouchableOpacity>
-                    </BlurView>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={handleOpenGuide}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.buttonText}>Acessar Guia</Text>
+                                <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
+                            </TouchableOpacity>
+                        </BlurView>
+                    </SafeAreaView>
                 </ScrollView>
             </Animated.View>
         </ImageBackground>

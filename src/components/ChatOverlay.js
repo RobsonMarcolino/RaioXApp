@@ -8,11 +8,12 @@ const { height } = Dimensions.get('window');
 
 const ChatOverlay = () => {
     const { isChatOpen } = useChat();
-    const translateY = useRef(new Animated.Value(height)).current;
+    // Add extra offset (100) to ensure it's fully off-screen even with browser address bars
+    const translateY = useRef(new Animated.Value(height + 100)).current;
 
     useEffect(() => {
         Animated.spring(translateY, {
-            toValue: isChatOpen ? 0 : height,
+            toValue: isChatOpen ? 0 : height + 100, // Use same extra offset when closing
             useNativeDriver: Platform.OS !== 'web', // Web supports it but native is better with it
             friction: 8,
             tension: 40,
