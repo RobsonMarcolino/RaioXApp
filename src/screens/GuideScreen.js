@@ -59,7 +59,7 @@ const GuideScreen = () => {
                             <BookOpen size={40} color={COLORS.primary} />
                         </View>
 
-                        <Text style={styles.cardTitle}>Guia Completo 2024</Text>
+                        <Text style={styles.cardTitle}>Guia Completo 2026</Text>
                         <Text style={styles.cardDescription}>
                             Acesse agora o manual digital com calendário, power packs e diretrizes de execução.
                         </Text>
