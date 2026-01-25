@@ -1,7 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { BookOpen, ExternalLink } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ImageBackground, Dimensions, Animated, Platform, ScrollView } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { BookOpen, ExternalLink } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 const { width, height } = Dimensions.get('window');
@@ -11,6 +14,7 @@ const GuideScreen = () => {
     const scaleAnim = React.useRef(new Animated.Value(0.85)).current;
     const opacityAnim = React.useRef(new Animated.Value(0)).current;
     const translateYAnim = React.useRef(new Animated.Value(50)).current; // Slide up slightly
+    const insets = useSafeAreaInsets();
 
     React.useEffect(() => {
         Animated.parallel([
@@ -58,38 +62,42 @@ const GuideScreen = () => {
                     ]
                 }
             ]}>
-                <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
-                    <ScrollView
-                        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: SPACING.lg }}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        <BlurView intensity={40} tint="dark" style={styles.glassCard}>
-                            <View style={styles.header}>
-                                <Text style={styles.title}>Guia de Bolso</Text>
-                                <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
-                            </View>
+                <ScrollView
+                    contentContainerStyle={{
+                        flexGrow: 1,
+                        justifyContent: 'center',
+                        padding: SPACING.lg,
+                        paddingTop: insets.top + SPACING.lg,
+                        paddingBottom: insets.bottom + SPACING.lg
+                    }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <BlurView intensity={40} tint="dark" style={styles.glassCard}>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>Guia de Bolso</Text>
+                            <Text style={styles.subtitle}>Informações essenciais na palma da mão</Text>
+                        </View>
 
-                            <View style={styles.iconContainer}>
-                                <BookOpen size={56} color={COLORS.primary} />
-                                <View style={styles.iconGlow} />
-                            </View>
+                        <View style={styles.iconContainer}>
+                            <BookOpen size={56} color={COLORS.primary} />
+                            <View style={styles.iconGlow} />
+                        </View>
 
-                            <Text style={styles.cardTitle}>Guia Completo</Text>
-                            <Text style={styles.cardDescription}>
-                                Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
-                            </Text>
+                        <Text style={styles.cardTitle}>Guia Completo</Text>
+                        <Text style={styles.cardDescription}>
+                            Acesse o calendário, power packs das redes e todas as informações estratégicas para sua execução.
+                        </Text>
 
-                            <TouchableOpacity
-                                style={styles.button}
-                                onPress={handleOpenGuide}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.buttonText}>Acessar Guia</Text>
-                                <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
-                            </TouchableOpacity>
-                        </BlurView>
-                    </ScrollView>
-                </SafeAreaView>
+                        <TouchableOpacity
+                            style={styles.button}
+                            onPress={handleOpenGuide}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.buttonText}>Acessar Guia</Text>
+                            <ExternalLink size={24} color="#1A1A1A" style={{ marginLeft: 8 }} />
+                        </TouchableOpacity>
+                    </BlurView>
+                </ScrollView>
             </Animated.View>
         </ImageBackground>
     );
