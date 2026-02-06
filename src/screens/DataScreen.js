@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, Modal, ScrollView, Image, Dimensions, Animated } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, Modal, ScrollView, Animated, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Search, Filter, X, Store, MapPin, TrendingUp, LayoutGrid, Award, ChevronRight } from 'lucide-react-native';
+import { Search, X, Store, MapPin, TrendingUp, LayoutGrid, Award, Briefcase, User, ChevronRight, ArrowLeft } from 'lucide-react-native';
 import { loadSheetData } from '../services/aiService';
 import SkeletonCard from '../components/SkeletonCard';
 
@@ -13,42 +12,37 @@ const BEES_YELLOW = '#FCD535';
 const BEES_BLACK = '#1A1A1A';
 const BEES_WHITE = '#FFFFFF';
 
-// Helper to normalize strings (remove accents, lowercase)
+const INFO_ICON = require('../../assets/icon.png');
+const HEADER_LOGO = require('../../assets/lojas_score5.png'); // Updated based on assets
+const DEFAULT_IMAGE = require('../../assets/icon.png');
+
+// Helper to normalize strings for mapping
 const normalizeString = (str) => {
     if (!str) return '';
-    return str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
+    return str.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "_");
 };
 
-// Local assets mapping - keys must be normalized
+// Map of network names to their logo assets
 const NETWORK_ASSETS = {
+    'abc': require('../../assets/abc.jpg'),
+    'epa': require('../../assets/Epa.png'),
+    'mart_minas': require('../../assets/MartMinas.png'),
+    'super_bh': require('../../assets/superBH.jpg'),
     'bahamas': require('../../assets/Bahamas.jpg'),
     'bernardao': require('../../assets/Bernardao.jpg'),
-    'coelho diniz': require('../../assets/CoelhoDiniz.jpg'),
-    'epa': require('../../assets/Epa.png'),
-    'mart minas': require('../../assets/MartMinas.png'),
-    'super nosso': require('../../assets/SuperNosso.jpg'),
+    'coelho_diniz': require('../../assets/CoelhoDiniz.jpg'),
+    'super_nosso': require('../../assets/SuperNosso.jpg'),
     'verdemar': require('../../assets/Verdemar.jpg'),
     'villefort': require('../../assets/Villefort.jpg'),
-    'abc': require('../../assets/abc.jpg'),
-
     'atacadao': require('../../assets/atacadao.jpg'),
-    'big mais': require('../../assets/bigmais.png'),
+    'big_mais': require('../../assets/bigmais.png'),
     'carrefour': require('../../assets/carrefour.png'),
     'rena': require('../../assets/rena.jpg'),
     'sendas': require('../../assets/sendas.jpg'),
-    'super bh': require('../../assets/superBH.jpg'),
-    'abc alimentos a baixo custo': require('../../assets/abc.jpg'),
-    'big mais supermercados': require('../../assets/bigmais.png'),
-    'casa rena': require('../../assets/rena.jpg'),
-    'atacadao s.a.': require('../../assets/atacadao.jpg'),
+    'assai': require('../../assets/sendas.jpg'),
 };
-
-const DEFAULT_IMAGE = require('../../assets/icon.png');
-const HEADER_LOGO = require('../../assets/lojas_score5.png');
 
 const AnimatedItem = ({ index, children }) => {
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -60,13 +54,13 @@ const AnimatedItem = ({ index, children }) => {
                 toValue: 1,
                 duration: 500,
                 useNativeDriver: true,
-                delay: index * 100, // Stagger effect
+                delay: index * 50, // Reduced delay for smoother list load
             }),
             Animated.timing(slideAnim, {
                 toValue: 0,
                 duration: 500,
                 useNativeDriver: true,
-                delay: index * 100,
+                delay: index * 50,
             }),
         ]).start();
     }, []);
@@ -98,17 +92,23 @@ const DataScreen = () => {
 
     const loadData = async () => {
         setIsLoading(true);
-        // Artificial delay for effect
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const sheetData = await loadSheetData();
-        setData(sheetData);
-        setFilteredData(sheetData);
-        setIsLoading(false);
+        try {
+            // Artificial delay for effect
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            const sheetData = await loadSheetData();
+            setData(sheetData);
+            setFilteredData(sheetData);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // Extract unique networks
+    // Extract unique networks (Redes)
+    // Note: 'rede' is now populated from 'GC' column in aiService
     const uniqueRedes = useMemo(() => {
-        const redes = [...new Set(data.map(item => item.rede).filter(Boolean))];
+        const redes = [...new Set(data.map(item => item.rede).filter(r => r && r !== 'Outros'))];
         return redes.sort();
     }, [data]);
 
@@ -119,20 +119,33 @@ const DataScreen = () => {
             return;
         }
         const lower = text.toLowerCase();
+        // Base data depends on if a Rede is selected
         const baseData = selectedRede ? data.filter(item => item.rede === selectedRede) : data;
 
         const filtered = baseData.filter(item =>
-            (item.eg && item.eg.toLowerCase().includes(lower)) ||
-            (item.nome_fantasia && item.nome_fantasia.toLowerCase().includes(lower)) ||
-            (!selectedRede && item.rede && item.rede.toLowerCase().includes(lower))
+            (item.chave_pdv && item.chave_pdv.toString().toLowerCase().includes(lower)) ||
+            (item.nome_pdv && item.nome_pdv.toLowerCase().includes(lower)) ||
+            (item.rede && item.rede.toLowerCase().includes(lower))
         );
         setFilteredData(filtered);
     };
 
     const handleSelectRede = (rede) => {
+        console.log("👉 User selected Rede:", rede);
+
+        if (!rede) return;
+
+        // Force string comparison to be safe
+        const filtered = data.filter(item =>
+            item.rede &&
+            item.rede.toString().toLowerCase() === rede.toString().toLowerCase()
+        );
+
+        console.log(`✅ Found ${filtered.length} items for ${rede}`);
+
         setSelectedRede(rede);
         setSearch('');
-        setFilteredData(data.filter(item => item.rede === rede));
+        setFilteredData(filtered);
     };
 
     const handleBackToRedes = () => {
@@ -178,16 +191,13 @@ const DataScreen = () => {
             <TouchableOpacity onPress={() => openModal(item)} activeOpacity={0.7}>
                 <View style={styles.itemCard}>
                     <View style={styles.itemHeader}>
-                        <Text style={styles.itemEg}>{item.eg}</Text>
+                        <Text style={styles.itemEg}>#{item.chave_pdv}</Text>
                         <View style={styles.badgeContainer}>
                             <Text style={styles.badgeText}>{item.gn || 'N/A'}</Text>
                         </View>
                     </View>
-                    <Text style={styles.itemName}>{item.nome_fantasia}</Text>
-                    <View style={styles.itemRow}>
-                        <MapPin size={14} color={COLORS.textTertiary} />
-                        <Text style={styles.itemDetail}>{item.rede}</Text>
-                    </View>
+                    <Text style={styles.itemName}>{item.nome_pdv}</Text>
+                    {/* Removed GEO/GC Area line per user request */}
                     <Text style={styles.clickHint}>Ver detalhes</Text>
                 </View>
             </TouchableOpacity>
@@ -203,7 +213,7 @@ const DataScreen = () => {
 
     // Get header image for selected network
     const getHeaderImage = () => {
-        if (!selectedRede) return HEADER_LOGO; // Default to LOGO1.jpg
+        if (!selectedRede) return HEADER_LOGO;
         const normalizedRede = normalizeString(selectedRede);
         return NETWORK_ASSETS[normalizedRede] || HEADER_LOGO;
     };
@@ -253,8 +263,6 @@ const DataScreen = () => {
                     </View>
                 </View>
 
-
-
                 {/* Loading Skeletons */}
                 {isLoading && (
                     <View style={styles.list}>
@@ -281,7 +289,7 @@ const DataScreen = () => {
                         key="list"
                         data={filteredData}
                         renderItem={renderItem}
-                        keyExtractor={(item, index) => item.eg || index.toString()}
+                        keyExtractor={(item, index) => item.chave_pdv || index.toString()}
                         contentContainerStyle={styles.list}
                         initialNumToRender={10}
                         ListEmptyComponent={
@@ -312,109 +320,73 @@ const DataScreen = () => {
 
                         {selectedItem && (
                             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                                {/* Identificação */}
                                 <View style={styles.modalSection}>
                                     <View style={styles.sectionHeader}>
                                         <Store size={20} color={COLORS.primary} />
                                         <Text style={styles.sectionTitle}>Identificação</Text>
                                     </View>
                                     <View style={styles.card}>
-                                        {renderDetailRow('EG', selectedItem.eg)}
-                                        {renderDetailRow('Nome', selectedItem.nome_fantasia)}
-                                        {renderDetailRow('Rede', selectedItem.rede)}
-                                    </View>
-                                </View>
-
-                                {/* Performance Charts */}
-                                <View style={styles.modalSection}>
-                                    <View style={styles.sectionHeader}>
-                                        <TrendingUp size={20} color={COLORS.primary} />
-                                        <Text style={styles.sectionTitle}>Visão Gráfica</Text>
-                                    </View>
-                                    <View style={[styles.card, { alignItems: 'center' }]}>
-                                        <Text style={styles.chartTitle}>Share de Espaço (M0)</Text>
-                                        <PieChart
-                                            data={[
-                                                {
-                                                    name: 'M0',
-                                                    population: parseFloat(selectedItem.share_de_espaco_m0?.replace('%', '') || 0),
-                                                    color: COLORS.primary,
-                                                    legendFontColor: '#7F7F7F',
-                                                    legendFontSize: 12,
-                                                },
-                                                {
-                                                    name: 'Restante',
-                                                    population: 100 - parseFloat(selectedItem.share_de_espaco_m0?.replace('%', '') || 0),
-                                                    color: '#F0F0F0',
-                                                    legendFontColor: '#7F7F7F',
-                                                    legendFontSize: 12,
-                                                },
-                                            ]}
-                                            width={Dimensions.get('window').width * 0.85}
-                                            height={180}
-                                            chartConfig={{
-                                                backgroundColor: '#ffffff',
-                                                backgroundGradientFrom: '#ffffff',
-                                                backgroundGradientTo: '#ffffff',
-                                                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                            }}
-                                            accessor="population"
-                                            backgroundColor="transparent"
-                                            paddingLeft="15"
-                                            absolute
-                                        />
-                                    </View>
-                                </View>
-
-                                <View style={styles.modalSection}>
-                                    <View style={styles.sectionHeader}>
-                                        <MapPin size={20} color={COLORS.primary} />
-                                        <Text style={styles.sectionTitle}>Estrutura</Text>
-                                    </View>
-                                    <View style={styles.card}>
-                                        {renderDetailRow('Coordenador', selectedItem.coordenador)}
+                                        {renderDetailRow('Chave PDV', selectedItem.chave_pdv)}
+                                        {renderDetailRow('Nome PDV', selectedItem.nome_pdv)}
                                         {renderDetailRow('GN', selectedItem.gn)}
-                                        {renderDetailRow('SL/SC', selectedItem.sl_sc)}
                                     </View>
                                 </View>
 
+                                {/* Performance Cerveja */}
                                 <View style={styles.modalSection}>
                                     <View style={styles.sectionHeader}>
                                         <TrendingUp size={20} color={COLORS.primary} />
-                                        <Text style={styles.sectionTitle}>Performance</Text>
+                                        <Text style={styles.sectionTitle}>Performance Cerveja</Text>
                                     </View>
                                     <View style={styles.card}>
-                                        {renderDetailRow('Share de Espaço M-1', selectedItem.share_de_espaco_m1)}
-                                        {renderDetailRow('Share de Espaço M0', selectedItem.share_de_espaco_m0)}
-                                        {renderDetailRow('Share de Espaço vs M-1', selectedItem.share_de_espaco_vs_m1)}
-                                        {renderDetailRow('Share de Gelado M-1', selectedItem.share_de_gelado_m1)}
-                                        {renderDetailRow('Share de Gelado M0', selectedItem.share_de_gelado_m0)}
-                                        {renderDetailRow('Share de Gelado vs M-1', selectedItem.share_de_gelado_vs_m1)}
+                                        {renderDetailRow('TT Tendência', selectedItem.cerv_tt_tend)}
+                                        {renderDetailRow('TT vs LY', selectedItem.cerv_vs_ly)}
+                                        {renderDetailRow('HE Tendência', selectedItem.cerv_he_tend)}
+                                        {renderDetailRow('HE vs LY', selectedItem.he_vs_ly)}
                                     </View>
                                 </View>
 
+                                {/* Execução */}
                                 <View style={styles.modalSection}>
                                     <View style={styles.sectionHeader}>
                                         <LayoutGrid size={20} color={COLORS.primary} />
                                         <Text style={styles.sectionTitle}>Execução</Text>
                                     </View>
                                     <View style={styles.card}>
-                                        {renderDetailRow('Gôndola', selectedItem.gondola)}
-                                        {renderDetailRow('Ponto Extra', selectedItem.ponto_extra)}
-                                        {renderDetailRow('Base Foco', selectedItem.base_foco)}
+                                        {renderDetailRow('KPIs OK', selectedItem.kpis_ok)}
+                                        {renderDetailRow('PTs', selectedItem.pts)}
+                                        {renderDetailRow('Destaque HE', selectedItem.dtq_he)}
                                     </View>
                                 </View>
 
+                                {/* Share */}
                                 <View style={styles.modalSection}>
                                     <View style={styles.sectionHeader}>
                                         <Award size={20} color={COLORS.primary} />
-                                        <Text style={styles.sectionTitle}>Cobertura de HDW</Text>
+                                        <Text style={styles.sectionTitle}>Share</Text>
                                     </View>
                                     <View style={styles.card}>
-                                        {renderDetailRow('Corona', selectedItem.corona)}
-                                        {renderDetailRow('Spaten', selectedItem.spaten)}
-                                        {renderDetailRow('Stella', selectedItem.stella)}
+                                        {renderDetailRow('Share Espaço', selectedItem.share_espaco)}
+                                        {renderDetailRow('Share Gelado', selectedItem.share_gelado)}
                                     </View>
                                 </View>
+
+                                {/* Estrutura */}
+                                <View style={styles.modalSection}>
+                                    <View style={styles.sectionHeader}>
+                                        <Briefcase size={20} color={COLORS.primary} />
+                                        <Text style={styles.sectionTitle}>Estrutura</Text>
+                                    </View>
+                                    <View style={styles.card}>
+                                        {renderDetailRow('Sup. Visita', selectedItem.visita_sup)}
+                                        {renderDetailRow('Hardware', selectedItem.hardware)}
+                                        {renderDetailRow('Promotor', selectedItem.promotor)}
+                                        {renderDetailRow('SN', selectedItem.sn)}
+                                        {renderDetailRow('SL', selectedItem.sl)}
+                                    </View>
+                                </View>
+
                                 <View style={{ height: 40 }} />
                             </ScrollView>
                         )}
@@ -428,28 +400,35 @@ const DataScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: BEES_YELLOW,
+        backgroundColor: COLORS.background,
     },
     topSection: {
-        height: '30%',
+        height: 120, // Reduced height to not take over screen
+        width: '100%',
         backgroundColor: BEES_YELLOW,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
     },
     headerImage: {
         width: '100%',
         height: '100%',
+        opacity: 0.9,
     },
     bottomSection: {
         flex: 1,
-        backgroundColor: BEES_WHITE,
+        backgroundColor: '#F5F5F5',
         borderTopLeftRadius: 30,
         borderTopRightRadius: 30,
+        marginTop: -20,
         overflow: 'hidden',
-        ...SHADOWS.lg,
     },
     sheetHeader: {
         padding: SPACING.lg,
-        paddingBottom: SPACING.sm,
-        backgroundColor: BEES_WHITE,
+        paddingBottom: SPACING.md,
+        backgroundColor: '#FFF',
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.gray100,
     },
     titleRow: {
         flexDirection: 'row',
@@ -462,38 +441,46 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 24,
-        fontWeight: 'bold',
         color: BEES_BLACK,
+        fontFamily: 'Poppins_700Bold',
         flex: 1,
     },
     searchContainer: {
         flexDirection: 'row',
         backgroundColor: COLORS.gray100,
-        borderRadius: RADIUS.lg,
-        padding: SPACING.md,
+        borderRadius: RADIUS.md,
+        padding: SPACING.sm,
         alignItems: 'center',
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
         color: COLORS.textPrimary,
-        height: '100%',
+        fontFamily: 'Poppins_400Regular',
+        marginLeft: 8,
     },
+    list: {
+        padding: SPACING.md,
+        paddingBottom: 80,
+    },
+    // GRID STYLES FOR REDES
     gridList: {
-        padding: SPACING.lg,
-        paddingTop: SPACING.sm,
+        padding: SPACING.md,
+        paddingBottom: 80,
     },
     columnWrapper: {
         justifyContent: 'space-between',
+        marginBottom: SPACING.md,
     },
     redeCard: {
-        width: '48%', // Responsive width
-        height: 160,
-        borderRadius: RADIUS.lg,
-        marginBottom: SPACING.md,
-        overflow: 'hidden',
+        width: '48%', // Check this roughly fits 2 columns
+        height: 140,
         backgroundColor: '#FFF',
+        borderRadius: RADIUS.md,
+        overflow: 'hidden',
         ...SHADOWS.md,
+        borderWidth: 1,
+        borderColor: COLORS.gray100,
     },
     redeImage: {
         width: '100%',
@@ -501,43 +488,41 @@ const styles = StyleSheet.create({
     },
     redeGradient: {
         position: 'absolute',
+        bottom: 0,
         left: 0,
         right: 0,
-        bottom: 0,
-        height: '60%',
+        height: 60,
         justifyContent: 'flex-end',
         padding: SPACING.sm,
     },
     redeName: {
         color: '#FFF',
         fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 4,
+        fontFamily: 'Poppins_700Bold',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
     redeFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 4,
     },
     redeCount: {
-        color: 'rgba(255,255,255,0.8)',
+        color: '#EEE',
         fontSize: 12,
+        fontFamily: 'Poppins_400Regular',
     },
-    list: {
-        padding: SPACING.md,
-    },
+    // LIST ITEMS (LOJAS)
     itemCard: {
         backgroundColor: '#FFF',
         borderRadius: RADIUS.lg,
         padding: SPACING.md,
         marginBottom: SPACING.sm,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
         borderWidth: 1,
         borderColor: COLORS.gray100,
+        ...SHADOWS.sm,
     },
     itemHeader: {
         flexDirection: 'row',
@@ -546,9 +531,9 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xs,
     },
     itemEg: {
-        fontWeight: 'bold',
         color: COLORS.primary,
         fontSize: 16,
+        fontFamily: 'Poppins_700Bold',
     },
     badgeContainer: {
         backgroundColor: COLORS.gray100,
@@ -565,16 +550,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: COLORS.textPrimary,
         marginBottom: SPACING.xs,
-    },
-    itemRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.xs,
-    },
-    itemDetail: {
-        fontSize: 12,
-        color: COLORS.textTertiary,
-        marginLeft: 4,
+        fontFamily: 'Poppins_600SemiBold',
     },
     clickHint: {
         fontSize: 10,
@@ -583,6 +559,16 @@ const styles = StyleSheet.create({
         textAlign: 'right',
         fontStyle: 'italic',
     },
+    emptyContainer: {
+        padding: SPACING.xl,
+        alignItems: 'center',
+    },
+    emptyText: {
+        color: COLORS.textSecondary,
+        fontSize: 16,
+        fontFamily: 'Poppins_500Medium',
+    },
+    // MODAL
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
@@ -606,8 +592,8 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 22,
-        fontWeight: 'bold',
         color: COLORS.textPrimary,
+        fontFamily: 'Poppins_700Bold',
     },
     closeButton: {
         padding: 8,
@@ -627,10 +613,10 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 16,
-        fontWeight: 'bold',
         color: COLORS.primary,
         marginLeft: SPACING.sm,
         textTransform: 'uppercase',
+        fontFamily: 'Poppins_700Bold',
     },
     card: {
         backgroundColor: '#FFF',
@@ -649,51 +635,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.textSecondary,
         flex: 1,
-    },
-    detailValue: {
-        fontSize: 14,
-        color: COLORS.textPrimary,
-        fontWeight: '600',
-        flex: 1,
-        textAlign: 'right',
-    },
-    emptyContainer: {
-        padding: SPACING.xl,
-        alignItems: 'center',
-    },
-    emptyText: {
-        color: COLORS.textSecondary,
-        fontSize: 16,
-        fontFamily: 'Poppins_500Medium',
-    },
-    // New Font Styles Override
-    title: {
-        fontSize: 24,
-        color: BEES_BLACK,
-        flex: 1,
-        fontFamily: 'Poppins_700Bold',
-    },
-    redeName: {
-        color: '#FFF',
-        fontSize: 16,
-        marginBottom: 4,
-        fontFamily: 'Poppins_700Bold',
-    },
-    itemEg: {
-        color: COLORS.primary,
-        fontSize: 16,
-        fontFamily: 'Poppins_700Bold',
-    },
-    itemName: {
-        fontSize: 16,
-        color: COLORS.textPrimary,
-        marginBottom: SPACING.xs,
-        fontFamily: 'Poppins_600SemiBold',
-    },
-    detailLabel: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        flex: 1,
         fontFamily: 'Poppins_400Regular',
     },
     detailValue: {
@@ -702,18 +643,6 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'right',
         fontFamily: 'Poppins_600SemiBold',
-    },
-    modalTitle: {
-        fontSize: 22,
-        color: COLORS.textPrimary,
-        fontFamily: 'Poppins_700Bold',
-    },
-    sectionTitle: {
-        fontSize: 16,
-        color: COLORS.primary,
-        marginLeft: SPACING.sm,
-        textTransform: 'uppercase',
-        fontFamily: 'Poppins_700Bold',
     },
 });
 

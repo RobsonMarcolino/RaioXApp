@@ -1,7 +1,7 @@
 export const QUICK_REPLIES = [
     {
         id: 'analise',
-        text: '📊 Analisar EG',
+        text: '📊 Analisar PDV',
         prompt: 'Quero analisar uma loja',
         type: 'action'
     },
@@ -27,9 +27,9 @@ export const QUICK_REPLIES = [
 ];
 
 export const BOT_KNOWLEDGE = {
-    'me dê dicas de uso': `Aqui estão algumas dicas para aproveitar ao máximo: 💡\n\n1. **Digite o Código EG** da loja para uma análise completa.\n2. Digite **"Menu"** a qualquer momento para voltar ao início.\n3. Use as opções rápidas para agilidade.\n4. Se precisar de algo externo, use **Abrir solicitação**.`,
+    'me dê dicas de uso': `Aqui estão algumas dicas para aproveitar ao máximo: 💡\n\n1. **Digite a Chave PDV** da loja para uma análise completa.\n2. Digite **"Menu"** a qualquer momento para voltar ao início.\n3. Use as opções rápidas para agilidade.\n4. Se precisar de algo externo, use **Abrir solicitação**.`,
 
-    'quero analisar uma loja': 'Claro! Por favor, **digite o Código EG** da loja que você deseja analisar. 🔢',
+    'quero analisar uma loja': 'Claro! Por favor, **digite a Chave PDV** da loja que você deseja analisar. 🔢',
 
     'preciso de suporte': `Para suporte técnico, você pode:\n\n1. Entrar em contato com o coordenador regional.\n2. Abrir um chamado no portal de chamados.\n3. Se for dúvida de uso, eu posso tentar te explicar! O que está acontecendo?`,
 

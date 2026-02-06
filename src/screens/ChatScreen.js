@@ -3,9 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Keyboard
 import { LinearGradient } from 'expo-linear-gradient';
 import { Send, User, Bot, BarChart2, Store, FileText, ExternalLink, ChevronLeft } from 'lucide-react-native';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
-import { loadSheetData, callGoogleAI } from '../services/aiService';
+import { loadSheetData, callGoogleAI, generateChatResponse } from '../services/aiService';
 import { QUICK_REPLIES, BOT_KNOWLEDGE } from '../data/chatData';
-
 import { useNavigation } from '@react-navigation/native';
 import { useChat } from '../context/ChatContext';
 
@@ -210,15 +209,12 @@ const ChatScreen = ({ isOverlay }) => {
                 }
             }
 
-            // O Backend agora gera o contexto. Nós mandamos apenas a mensagem e o EG.
-            // Se estabelecimento for null, enviamos null (ou seja, perguntas genéricas).
-            const egCode = estabelecimento ? estabelecimento.eg : null;
-
-            const aiResponse = await callGoogleAI(userMessage.text, egCode);
+            // Use LOCAL response generation for immediate update
+            const aiResponse = generateChatResponse(userMessage.text, csvData);
 
             const botMessage = {
                 id: Date.now().toString() + '_bot',
-                text: aiResponse.resposta || "Sem resposta.",
+                text: aiResponse.text || "Sem resposta.",
                 card: aiResponse.card || null, // Armazena dados do card se houver
                 sender: 'bot',
                 timestamp: new Date(),
@@ -261,79 +257,73 @@ const ChatScreen = ({ isOverlay }) => {
         return renderFormattedText(displayedText, false);
     };
 
-    // Componente Visual do Card
+    // Componente Visual do Card ATUALIZADO (V2)
     const AnalysisCard = ({ data }) => {
         if (!data) return null;
 
-        const isSuccess = data.share.status === 'success';
-        const isDanger = data.share.status === 'danger';
-        const statusColor = isSuccess ? COLORS.success : (isDanger ? COLORS.error : COLORS.warning);
-        const statusIcon = isSuccess ? "🚀" : (isDanger ? "📉" : "➖");
+        // Helper for rows
+        const Row = ({ label, value, highlight }) => (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 13 }}>{label}</Text>
+                <Text style={{ color: highlight ? COLORS.primaryDark : COLORS.textPrimary, fontWeight: highlight ? 'bold' : 'normal', fontSize: 13 }}>{value}</Text>
+            </View>
+        );
+
+        const SectionBox = ({ icon, title, children }) => (
+            <View style={styles.cardSection}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                    {icon}
+                    <Text style={styles.cardSectionTitle}>{title}</Text>
+                </View>
+                {children}
+            </View>
+        );
 
         return (
             <View style={styles.cardContainer}>
-                {/* Cabeçalho do Card */}
-                <View style={[styles.cardHeader, { borderLeftColor: statusColor }]}>
+                {/* Cabeçalho */}
+                <View style={[styles.cardHeader, { borderLeftColor: COLORS.primary }]}>
                     <Text style={styles.cardTitle}>{data.title}</Text>
                     <Text style={styles.cardSubtitle}>{data.subtitle}</Text>
                 </View>
 
-                {/* Seção de Share */}
-                <View style={styles.cardSection}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View>
-                            <Text style={styles.cardLabel}>Share Atual</Text>
-                            <Text style={[styles.cardBigNumber, { color: statusColor }]}>{data.share.current}%</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={styles.cardLabel}>Anterior</Text>
-                            <Text style={styles.cardValue}>{data.share.previous}%</Text>
-                        </View>
-                    </View>
+                {/* Métricas Performance */}
+                <SectionBox icon={<BarChart2 size={16} color={COLORS.primary} style={{ marginRight: 6 }} />} title="Performance Cerveja">
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginTop: 4, marginBottom: 4 }}>TOTAL (TT)</Text>
+                    <Row label="Tendência" value={data.metrics.cerv_tt_tend} highlight />
+                    <Row label="Vs LY" value={data.metrics.cerv_vs_ly} />
 
-                    {/* Barra de Progresso Visual */}
-                    <View style={styles.progressBarBg}>
-                        <View style={[styles.progressBarFill, { width: `${Math.min(data.share.current, 100)}%`, backgroundColor: statusColor }]} />
-                    </View>
-                    <Text style={[styles.cardDelta, { color: statusColor }]}>
-                        {statusIcon} {isSuccess ? "+" : ""}{data.share.delta}% ({data.share.status === 'neutral' ? 'Estável' : (isSuccess ? 'Crescimento' : 'Queda')})
-                    </Text>
-                </View>
+                    <View style={{ height: 1, backgroundColor: COLORS.gray100, marginVertical: 8 }} />
 
-                {/* Checklist de Itens */}
-                <View style={styles.cardSection}>
-                    <Text style={styles.cardSectionTitle}>📋 Gaps de Execução:</Text>
-                    {data.gaps.length === 0 ? (
-                        <Text style={styles.successText}>✅ Loja Perfeita! Nenhum gap.</Text>
-                    ) : (
-                        data.gaps.map((gap, i) => (
-                            <View key={i} style={styles.gapItem}>
-                                <Text style={{ color: COLORS.error, fontWeight: 'bold' }}>❌ Faltando:</Text>
-                                <Text style={{ marginLeft: 5, color: COLORS.textSecondary }}>{gap}</Text>
-                            </View>
-                        ))
-                    )}
-                </View>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginBottom: 4 }}>HIGH END (HE)</Text>
+                    <Row label="Tendência" value={data.metrics.cerv_he_tend} highlight />
+                    <Row label="Vs LY" value={data.metrics.he_vs_ly} />
+                </SectionBox>
 
-                {/* Insight do Especialista */}
-                <View style={[styles.insightBox, { backgroundColor: statusColor + '20', borderColor: statusColor }]}>
+                {/* Market Share */}
+                <SectionBox icon={<BarChart2 size={16} color={COLORS.primary} style={{ marginRight: 6 }} />} title="Market Share">
+                    <Row label="Share Espaço" value={data.metrics.share_espaco} />
+                    <Row label="Share Gelado" value={data.metrics.share_gelado} />
+                </SectionBox>
+
+                {/* Execução */}
+                <SectionBox icon={<Store size={16} color={COLORS.primary} style={{ marginRight: 6 }} />} title="Execução Global">
+                    <Row label="KPIs OK" value={data.metrics.execution?.kpis_ok || data.execution.kpis_ok} />
+                    <Row label="Pontos (PTs)" value={data.execute?.pts || data.execution.pts} highlight />
+                    <Row label="Destaque HE" value={data.execute?.dtq_he || data.execution.dtq_he} />
+                </SectionBox>
+
+                {/* Estrutura */}
+                <SectionBox icon={<User size={16} color={COLORS.primary} style={{ marginRight: 6 }} />} title="Estrutura">
+                    <Row label="Hardware" value={data.structure.hardware} />
+                    <Row label="Promotor" value={data.structure.promotor} />
+                    <Row label="Visita Sup." value={data.structure.visita_sup} />
+                </SectionBox>
+
+                {/* Insight */}
+                <View style={[styles.insightBox, { backgroundColor: COLORS.gray100, borderColor: COLORS.primary }]}>
                     <Text style={[styles.insightText, { color: COLORS.textPrimary }]}>💡 {data.insight}</Text>
                 </View>
-
-                {/* Dados Extras (Atendimento/Visita) */}
-                {data.extra && (
-                    <View style={styles.extraInfoContainer}>
-                        <View style={styles.extraItem}>
-                            <Text style={styles.extraLabel}>📞 Atendimento</Text>
-                            <Text style={styles.extraValue}>{data.extra.atendimento}</Text>
-                        </View>
-                        <View style={styles.extraItem}>
-                            <Text style={styles.extraLabel}>🗓️ Visita Quinzenal</Text>
-                            <Text style={styles.extraValue}>{data.extra.visita_quinzenal}</Text>
-                        </View>
-                    </View>
-                )}
-
             </View>
         );
     };
