@@ -289,13 +289,13 @@ const ChatScreen = ({ isOverlay }) => {
 
                 {/* Métricas Performance */}
                 <SectionBox icon={<BarChart2 size={16} color={COLORS.primary} style={{ marginRight: 6 }} />} title="Performance Cerveja">
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginTop: 4, marginBottom: 4 }}>TOTAL (TT)</Text>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginTop: 4, marginBottom: 4 }}>CERV (TT)</Text>
                     <Row label="Tendência" value={data.metrics.cerv_tt_tend} highlight />
                     <Row label="Vs LY" value={data.metrics.cerv_vs_ly} />
 
                     <View style={{ height: 1, backgroundColor: COLORS.gray100, marginVertical: 8 }} />
 
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginBottom: 4 }}>HIGH END (HE)</Text>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: COLORS.gray600, marginBottom: 4 }}>CERV(HE)</Text>
                     <Row label="Tendência" value={data.metrics.cerv_he_tend} highlight />
                     <Row label="Vs LY" value={data.metrics.he_vs_ly} />
                 </SectionBox>
