@@ -340,9 +340,9 @@ const DataScreen = () => {
                                         <Text style={styles.sectionTitle}>Performance Cerveja</Text>
                                     </View>
                                     <View style={styles.card}>
-                                        {renderDetailRow('TT Tendência', selectedItem.cerv_tt_tend)}
-                                        {renderDetailRow('TT vs LY', selectedItem.cerv_vs_ly)}
-                                        {renderDetailRow('HE Tendência', selectedItem.cerv_he_tend)}
+                                        {renderDetailRow('CERV TT Tendência', selectedItem.cerv_tt_tend)}
+                                        {renderDetailRow('CERV vs LY', selectedItem.cerv_vs_ly)}
+                                        {renderDetailRow('CERV HE Tendência', selectedItem.cerv_he_tend)}
                                         {renderDetailRow('HE vs LY', selectedItem.he_vs_ly)}
                                     </View>
                                 </View>
